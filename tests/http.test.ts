@@ -73,6 +73,24 @@ test("HTTP real: origem, sessão local, autenticação MCP e escrita pelo protoc
     );
     const { token } = await (await fetch(url + "/api/session")).json();
     const state = await (await fetch(url + "/api/state")).json();
+    const preview = await fetch(url + "/api/latex-preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Laura-Token": token },
+      body: JSON.stringify({
+        content: {
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "A & B" }] },
+          ],
+        },
+      }),
+    });
+    assert.equal(preview.status, 200);
+    assert.equal((await preview.json()).blocks[0].code, "A \\& B\n\n");
+    assert.equal(
+      (await (await fetch(url + "/api/state")).json()).revision,
+      state.revision,
+    );
     const enable = await fetch(url + "/api/action/update_settings", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Laura-Token": token },
@@ -107,7 +125,10 @@ test("HTTP real: origem, sessão local, autenticação MCP e escrita pelo protoc
     );
   } finally {
     await client.close();
-    if(child.exitCode===null&&child.signalCode===null){child.kill("SIGTERM");await new Promise((r) => child.once("exit", r));}
+    if (child.exitCode === null && child.signalCode === null) {
+      child.kill("SIGTERM");
+      await new Promise((r) => child.once("exit", r));
+    }
     rmSync(root, { recursive: true, force: true });
   }
 });

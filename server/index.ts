@@ -22,6 +22,7 @@ import { Domain, type ToolName } from "./domain";
 import { createMcp } from "./mcp";
 import { importLatex, exportLatex, validateDoc } from "./documents";
 import { compiler, compile } from "./latex";
+import { latexPreview } from "./latex-preview";
 import { z } from "zod";
 import { academicPackage } from "./export";
 import { unpack, importWord } from "./imports";
@@ -167,6 +168,10 @@ app.get("/api/export/academic.zip", async (_req, reply) =>
     .type("application/zip")
     .send(Buffer.from(academicPackage(store.get()))),
 );
+app.post("/api/latex-preview", async (req) => {
+  const { content } = z.object({ content: z.any() }).parse(req.body);
+  return { blocks: latexPreview(content) };
+});
 app.get("/api/export/latex", async (_req, reply) => {
   const s = store.get();
   const tex = s.chapters

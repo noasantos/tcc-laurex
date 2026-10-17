@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { LatexSource } from "./LatexSource";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Node, Extension, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -27,6 +28,7 @@ import {
   Sigma,
   ArrowUpRight,
   FileText,
+  Code2,
 } from "lucide-react";
 import type { Chapter, Comment, Doc } from "../../server/types";
 import { resolveAnchor } from "../../server/anchors";
@@ -113,7 +115,7 @@ const RawLatex = Node.create({
   },
 });
 export type SelectionAnchor = {
-  rect?:{left:number;top:number;bottom:number;right:number};
+  rect?: { left: number; top: number; bottom: number; right: number };
   quote: string;
   anchor: {
     blockId?: string;
@@ -140,8 +142,8 @@ export function DocumentEditor({
   onSave: (content: Doc, baseRevision: number) => Promise<number>;
   onComment: (a: SelectionAnchor) => void;
   onOpenComment: (id: string) => void;
-  onCitation: (key: string,rect?:DOMRect) => void;
-  onFootnote: (text: string,rect?:DOMRect) => void;
+  onCitation: (key: string, rect?: DOMRect) => void;
+  onFootnote: (text: string, rect?: DOMRect) => void;
   onCrossRef: (id: string) => void;
   dirtyChanged: (v: boolean) => void;
   onInsert: (kind: string, insert: (attrs: any) => void) => void;
@@ -162,6 +164,8 @@ export function DocumentEditor({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [state, setState] = useState("Salvo");
   const [more, setMore] = useState(false);
+  const [showSource, setShowSource] = useState(false);
+  const visual = useRef<HTMLDivElement>(null);
   const [editTick, tick] = useState(0);
   const dirty = useRef(false);
   const draftAvailable = useRef(true);
@@ -278,11 +282,17 @@ export function DocumentEditor({
             "[data-citation],[data-footnote],[data-comment-id],[data-cross-reference]",
           );
           if (el?.dataset.citation) {
-            callbacks.current.onCitation(el.dataset.citation,el.getBoundingClientRect());
+            callbacks.current.onCitation(
+              el.dataset.citation,
+              el.getBoundingClientRect(),
+            );
             return true;
           }
           if (el?.dataset.footnote) {
-            callbacks.current.onFootnote(el.dataset.footnote,el.getBoundingClientRect());
+            callbacks.current.onFootnote(
+              el.dataset.footnote,
+              el.getBoundingClientRect(),
+            );
             return true;
           }
           if (el?.dataset.commentId) {
@@ -354,6 +364,7 @@ export function DocumentEditor({
     if (editor && !dirty.current) {
       if (JSON.stringify(chapter.content) !== lastSaved.current) {
         editor.commands.setContent(chapter.content, { emitUpdate: false });
+        tick((v) => v + 1);
         lastSaved.current = JSON.stringify(chapter.content);
       }
       baseRevision.current = chapter.revision;
@@ -397,9 +408,20 @@ export function DocumentEditor({
         blockId = $from.node(d).attrs.id;
         break;
       }
-    const rect=window.getSelection()?.rangeCount?window.getSelection()!.getRangeAt(0).getBoundingClientRect():undefined;
+    const rect = window.getSelection()?.rangeCount
+      ? window.getSelection()!.getRangeAt(0).getBoundingClientRect()
+      : undefined;
     onComment({
-      ...(rect?{rect:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom}}:{}),
+      ...(rect
+        ? {
+            rect: {
+              left: rect.left,
+              top: rect.top,
+              right: rect.right,
+              bottom: rect.bottom,
+            },
+          }
+        : {}),
       quote,
       anchor: {
         blockId,
@@ -468,10 +490,19 @@ export function DocumentEditor({
       </BubbleMenu>
       <div className="document-meta">
         <span>Documento / {chapter.title}</span>
-        <span className={state.startsWith("Falha") ? "error-text" : "saved"}>
-          {state === "Salvo" ? <Check size={14} /> : null}
-          {state}
-        </span>
+        <div className="document-meta-actions">
+          <button
+            className="source-toggle"
+            aria-pressed={showSource}
+            onClick={() => setShowSource((v) => !v)}
+          >
+            <Code2 size={14} /> {showSource ? "Ocultar LaTeX" : "Ver LaTeX"}
+          </button>
+          <span className={state.startsWith("Falha") ? "error-text" : "saved"}>
+            {state === "Salvo" ? <Check size={14} /> : null}
+            {state}
+          </span>
+        </div>
       </div>
       <div className="editor-toolbar">
         <div className="toolbar-main">
@@ -613,9 +644,22 @@ export function DocumentEditor({
           {button("Adicionar comentário", MessageCirclePlus, addComment)}
         </div>
       </div>
-      <div className="document-body">
-        <h1 className="chapter-title">{chapter.title}</h1>
-        <EditorContent editor={editor} />
+      <div
+        className={
+          "document-reading-layout" + (showSource ? " source-open" : "")
+        }
+      >
+        <div className="document-body" ref={visual}>
+          <h1 className="chapter-title">{chapter.title}</h1>
+          <EditorContent editor={editor} />
+        </div>
+        {showSource && (
+          <LatexSource
+            content={editor.getJSON() as Doc}
+            visual={visual}
+            onClose={() => setShowSource(false)}
+          />
+        )}
       </div>
       <div className="document-footer">
         {editor.getText().split(/\s+/).filter(Boolean).length} palavras{" "}

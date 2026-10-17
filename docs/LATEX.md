@@ -12,6 +12,12 @@ A ZIP is preserved as a full original, but only the selected main `.tex` is insp
 
 Word import is deliberately labeled text-only. It preserves the original archive but does not preserve its formatting in the visual representation. It is not a faithful DOCX-to-LaTeX converter.
 
+## Side-by-side source view
+
+“Ver LaTeX” in the document header opens a read-only code pane beside the visual editor. Reading remains the default. The code follows the current visual content, including local edits and updates received from the assistant; planning, notes and comments are excluded. Protected raw LaTeX blocks retain their exact source. This is a chapter content projection, not a full canonical project/preamble browser or a bidirectional source editor.
+
+Both panes scroll independently within the screen. Synchronization is enabled initially and maps matching top-level document blocks, interpolating within each block despite different rendered heights. The link button disables synchronization. On narrow screens the panes stack vertically. An unsupported conversion displays a message at its block without changing or hiding the academic source. The preview endpoint validates the document, requires the local session and never writes project data or compiles TeX.
+
 ## Export
 
 Academic ZIP includes chapter `.tex` files and bibliography; it excludes planning, personal notes and comments. Supported text styles, simple lists, headings, footnotes, citations, basic rectangular tables and PNG/JPEG figures are exported. Unsupported constructs block the export with a message rather than disappearing. WebP should be converted to PNG/JPEG before LaTeX export. Full-workspace backup preserves all visual content even when a LaTeX exporter rejects it.

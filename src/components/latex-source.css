@@ -1,0 +1,149 @@
+.document-meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.document-meta .source-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 4px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.document-meta .source-toggle:hover,
+.document-meta .source-toggle[aria-pressed="true"] {
+  background: var(--selected);
+  color: var(--text);
+}
+.document-reading-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.document-reading-layout > .document-body {
+  min-width: 0;
+}
+.document:has(.source-open) {
+  max-width: none;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.source-open > .document-body {
+  flex: 1 1 52%;
+  padding-right: 24px;
+}
+.latex-source {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 48%;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+  margin-left: 8px;
+}
+.latex-source-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 0 10px 20px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.latex-source-heading small {
+  color: var(--muted);
+  font-size: 10px;
+  margin-left: 8px;
+}
+.latex-source-heading > div {
+  display: flex;
+  gap: 2px;
+}
+.latex-source-heading button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 4px;
+}
+.latex-source-heading button:hover {
+  background: var(--selected);
+  color: var(--text);
+}
+.latex-source-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  padding: 0 8px 48px 20px;
+}
+.latex-source-note {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+  margin: 0 0 22px;
+  max-width: 340px;
+}
+.latex-source-block {
+  padding: 0 0 12px;
+}
+.latex-source-block pre {
+  font:
+    12px/1.85 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  tab-size: 2;
+  color: var(--text);
+}
+.latex-source-message {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 12px 0;
+}
+@media (max-width: 760px) {
+  .document:has(.source-open) {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .document-reading-layout.source-open {
+    flex-direction: column;
+  }
+  .source-open > .document-body {
+    flex: 1 1 55%;
+    padding-right: 4px;
+  }
+  .latex-source {
+    flex: 1 1 45%;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    margin: 8px 0 0;
+  }
+  .latex-source-heading {
+    padding-left: 0;
+    padding-top: 8px;
+  }
+  .latex-source-scroll {
+    padding-left: 0;
+  }
+  .document-meta-actions {
+    gap: 6px;
+  }
+}
