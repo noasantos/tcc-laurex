@@ -12,6 +12,11 @@ import Mathematics from "@tiptap/extension-mathematics";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
+const AlignedLatexSource = lazy(() =>
+  import("./AlignedLatexSource").then((module) => ({
+    default: module.AlignedLatexSource,
+  })),
+);
 const LatexSource = lazy(() =>
   import("./LatexSource").then((module) => ({ default: module.LatexSource })),
 );
@@ -513,7 +518,8 @@ export function DocumentEditor({
   useEffect(() => {
     if (!editor || !focusCommentId) return;
     editor.view.dispatch(editor.state.tr.setMeta("comments", true));
-    const pane = visual.current;
+    const pane =
+      sourceMode === "split" ? visual.current?.parentElement : visual.current;
     if (!pane) return;
     const reveal = () => {
       const target = editor.view.dom.querySelector<HTMLElement>(
@@ -545,15 +551,16 @@ export function DocumentEditor({
     };
     panel?.addEventListener("transitionend", afterTransition);
     return () => panel?.removeEventListener("transitionend", afterTransition);
-  }, [focusCommentId, focusRequest, editor]);
+  }, [focusCommentId, focusRequest, editor, sourceMode]);
   useEffect(() => {
-    const pane = visual.current;
+    const pane =
+      sourceMode === "split" ? visual.current?.parentElement : visual.current;
     pane?.addEventListener("scroll", closeHover, { passive: true });
     return () => {
       pane?.removeEventListener("scroll", closeHover);
       clearHoverTimers();
     };
-  }, [editor]);
+  }, [editor, sourceMode]);
   if (!editor) return null;
   const button = (label: string, Icon: any, fn: () => void, active = false) => (
     <button
@@ -648,27 +655,29 @@ export function DocumentEditor({
         aria-label="Ferramentas do trecho selecionado"
         onMouseDown={(e) => e.preventDefault()}
       >
-        {editor.isEditable && <>
-        {button(
-          "Negrito na seleção",
-          Bold,
-          () => editor.chain().focus().toggleBold().run(),
-          editor.isActive("bold"),
+        {editor.isEditable && (
+          <>
+            {button(
+              "Negrito na seleção",
+              Bold,
+              () => editor.chain().focus().toggleBold().run(),
+              editor.isActive("bold"),
+            )}
+            {button(
+              "Itálico na seleção",
+              Italic,
+              () => editor.chain().focus().toggleItalic().run(),
+              editor.isActive("italic"),
+            )}
+            {button(
+              "Sublinhado na seleção",
+              Underline,
+              () => editor.chain().focus().toggleUnderline().run(),
+              editor.isActive("underline"),
+            )}
+            <span className="selection-separator" />
+          </>
         )}
-        {button(
-          "Itálico na seleção",
-          Italic,
-          () => editor.chain().focus().toggleItalic().run(),
-          editor.isActive("italic"),
-        )}
-        {button(
-          "Sublinhado na seleção",
-          Underline,
-          () => editor.chain().focus().toggleUnderline().run(),
-          editor.isActive("underline"),
-        )}
-        <span className="selection-separator" />
-        </>}
         <button className="selection-comment" onClick={addComment}>
           <MessageCirclePlus size={15} />
           Comentar
@@ -852,7 +861,8 @@ export function DocumentEditor({
         className={
           "document-reading-layout" +
           (sourceMode !== "visual" ? " source-open" : "") +
-          (sourceMode === "source" ? " source-only" : "")
+          (sourceMode === "source" ? " source-only" : "") +
+          (sourceMode === "split" ? " source-aligned" : "")
         }
       >
         <div
@@ -860,7 +870,10 @@ export function DocumentEditor({
           ref={visual}
           hidden={sourceMode === "source"}
         >
-          {!(chapter.content.content?.[0]?.type === "heading" && plain(chapter.content.content[0]).trim() === chapter.title.trim()) && <h1 className="chapter-title">{chapter.title}</h1>}
+          {!(
+            chapter.content.content?.[0]?.type === "heading" &&
+            plain(chapter.content.content[0]).trim() === chapter.title.trim()
+          ) && <h1 className="chapter-title">{chapter.title}</h1>}
           {!!chapter.latexWarnings?.length && (
             <p className="latex-projection-notice">
               Este capítulo contém comandos preservados no fonte.{" "}
@@ -881,13 +894,19 @@ export function DocumentEditor({
               <p className="latex-source-message">Abrindo código LaTeX…</p>
             }
           >
-            <LatexSource
-              chapter={chapter}
-              split={sourceMode === "split"}
-              content={editor.getJSON() as Doc}
-              visual={visual}
-              onClose={() => setSourceMode("visual")}
-            />
+            {sourceMode === "split" ? (
+              <AlignedLatexSource
+                chapter={chapter}
+                content={editor.getJSON() as Doc}
+                visual={visual}
+                onOriginal={() => setSourceMode("source")}
+              />
+            ) : (
+              <LatexSource
+                chapter={chapter}
+                onClose={() => setSourceMode("visual")}
+              />
+            )}
           </Suspense>
         )}
       </div>

@@ -23,6 +23,7 @@ import { createMcp } from "./mcp";
 import { importLatex, exportLatex, validateDoc } from "./documents";
 import { compiler, compile } from "./latex";
 import { latexPreview } from "./latex-preview";
+import { latexAlignment } from "./latex-alignment";
 import { z } from "zod";
 import { academicPackage } from "./export";
 import { unpack, importWord } from "./imports";
@@ -171,6 +172,10 @@ app.get("/api/export/academic.zip", async (_req, reply) =>
 app.post("/api/latex-preview", async (req) => {
   const { content } = z.object({ content: z.any() }).parse(req.body);
   return { blocks: latexPreview(content) };
+});
+app.post("/api/latex-alignment", async (req) => {
+  const {content,source} = z.object({content:z.any(),source:z.string().max(5_000_000)}).parse(req.body);
+  return latexAlignment(content,source);
 });
 app.get("/api/export/latex", async (_req, reply) => {
   const s = store.get();

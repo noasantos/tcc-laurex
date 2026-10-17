@@ -1,0 +1,77 @@
+.document-reading-layout.source-aligned {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+.source-aligned > .document-body {
+  overflow: visible;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding-bottom: 64px;
+}
+.source-aligned .tiptap > * {
+  padding-top: var(--source-align-before, 0px);
+  min-height: var(--source-align-min-height, 0px);
+}
+.aligned-latex-source {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  border-left: 1px solid var(--line);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  box-sizing: border-box;
+  --tex-command: #5649a5;
+  --tex-number: #876036;
+  --tex-string: #357480;
+  --tex-punctuation: #64667a;
+}
+:root[data-theme="dark"] .aligned-latex-source {
+  --tex-command: #b6a8e8;
+  --tex-number: #dbb58b;
+  --tex-string: #8ec1c8;
+  --tex-punctuation: #adafbe;
+}
+.aligned-code-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding-left: 42px;
+  padding-right: 16px;
+  box-sizing: border-box;
+  white-space: pre;
+  font: 12px/24px ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: var(--text);
+}
+.aligned-code-row code {font:inherit;color:inherit;white-space:pre;}
+.aligned-line-number {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  padding-right: 8px;
+  box-sizing: border-box;
+  text-align: right;
+  font-size: 10px;
+  color: var(--muted);
+  user-select: none;
+}
+.aligned-code-baseline {display:inline-block;width:0;height:0;padding:0;border:0;vertical-align:baseline;}
+.aligned-latex-source .tok-keyword,.aligned-latex-source .tok-tagName,.aligned-latex-source .tok-typeName {color:var(--tex-command);}
+.aligned-latex-source .tok-atom,.aligned-latex-source .tok-number {color:var(--tex-number);}
+.aligned-latex-source .tok-string,.aligned-latex-source .tok-attributeName {color:var(--tex-string);}
+.aligned-latex-source .tok-meta,.aligned-latex-source .tok-punctuation {color:var(--tex-punctuation);}
+.aligned-latex-source .tok-comment {color:var(--muted);font-style:italic;}
+.aligned-source-notice {font-size:12px;line-height:1.7;color:var(--muted);padding:24px;margin:0;}
+@media (max-width:760px) {
+  .document-reading-layout.source-aligned {grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  .source-aligned > .document-body {padding-right:12px;}
+  .aligned-code-row {padding-left:28px;padding-right:8px;}
+  .aligned-line-number {width:22px;padding-right:4px;}
+}
