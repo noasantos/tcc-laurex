@@ -1,0 +1,61 @@
+{
+  "name": "laura-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0 <27"
+  },
+  "scripts": {
+    "dev": "tsx server/index.ts",
+    "build": "tsc --noEmit && vite build",
+    "start": "tsx server/index.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "backup": "tsx scripts/maintenance.ts backup",
+    "verify": "tsx scripts/maintenance.ts verify",
+    "recover": "tsx scripts/maintenance.ts restore",
+    "mcp": "tsx server/stdio.ts",
+    "mcp:poc": "tsx scripts/mcp-poc.ts",
+    "assistant:prepare": "tsx scripts/prepare-assistant.ts"
+  },
+  "dependencies": {
+    "@citation-js/core": "^0.9.0",
+    "@citation-js/plugin-bibtex": "^0.9.0",
+    "@fastify/static": "^10.1.6",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@radix-ui/react-popover": "^1.3.1",
+    "@radix-ui/react-radio-group": "^1.5.1",
+    "@radix-ui/react-select": "^2.4.1",
+    "@tiptap/extension-image": "^3.32.0",
+    "@tiptap/extension-link": "^3.32.0",
+    "@tiptap/extension-mathematics": "^3.32.0",
+    "@tiptap/extension-table": "^3.32.0",
+    "@tiptap/extension-unique-id": "^3.32.0",
+    "@tiptap/react": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
+    "@unified-latex/unified-latex-util-parse": "^1.8.4",
+    "@unified-latex/unified-latex-util-to-string": "^1.8.4",
+    "@xmldom/xmldom": "^0.9.12",
+    "diff": "^9.0.0",
+    "fastify": "^5.12.7",
+    "fflate": "^0.8.3",
+    "katex": "^0.18.10",
+    "lucide-react": "^1.59.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-dropzone": "^20.1.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/diff": "^7.0.2",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}
