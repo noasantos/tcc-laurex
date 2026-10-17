@@ -646,7 +646,7 @@ export default function App() {
               <div className="page-heading">
                 <div>
                   <h1>Configurações</h1>
-                  <p>Seu projeto, seus arquivos e a conexão com o ChatGPT.</p>
+                  <p>Seu projeto, seus arquivos e a conexão com o Codex local.</p>
                 </div>
                 <button
                   className="text-button"

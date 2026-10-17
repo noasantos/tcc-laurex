@@ -19,6 +19,8 @@ call npm ci --no-fund
 if errorlevel 1 goto fail
 call npm run build
 if errorlevel 1 goto fail
+call npm run assistant:connect -- --allow-local-write
+if errorlevel 1 goto fail
 node scripts\launch.cjs
 if errorlevel 1 goto fail
 exit /b 0

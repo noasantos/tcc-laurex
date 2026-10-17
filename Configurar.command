@@ -7,4 +7,5 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 npm ci --no-fund
 npm run build
+npm run assistant:connect -- --allow-local-write
 exec node scripts/launch.cjs

@@ -138,7 +138,7 @@ export function Settings({
         {[
           ["general", "Geral"],
           ["files", "Arquivos"],
-          ["chatgpt", "ChatGPT"],
+          ["chatgpt", "Codex local"],
           ["safety", "Avançado"],
         ].map(([id, label]) => (
           <button
@@ -567,28 +567,28 @@ export function Settings({
       <div className="settings-section" hidden={tab !== "chatgpt"}>
         <h3>Continue na sua conversa do TCC.</h3>
         <p className="subtle">
-          O ChatGPT organiza, escreve e cadastra as fontes. Aqui você acompanha
+          O Codex organiza, escreve e cadastra as fontes. Aqui você acompanha
           o documento, comenta os trechos e revisa as alterações.
         </p>
         <div className="connection-summary">
           <span className="local-dot" />
           <strong>
             {state.settings.mcpEnabled && state.settings.mcpWrite
-              ? "Acesso local preparado"
-              : "Integração ainda não preparada"}
+              ? "Acesso local autorizado"
+              : "Acesso local não habilitado"}
           </strong>
           <p>
             {state.settings.mcpEnabled
-              ? "A conexão com sua conta é verificada durante a configuração assistida."
+              ? "O Codex inicia o MCP neste computador. A autorização abaixo não confirma que a conversa já carregou as ferramentas."
               : "A configuração inicial é feita uma vez, com ajuda do assistente."}
           </p>
         </div>
         <p className="subtle">
-          A preparação inicial é feita com o roteiro enviado por quem auxilia
-          você. Depois, basta continuar sua conversa do TCC.
+          Depois de configurar, retome sua conversa no Codex e peça para abrir o
+          workspace. Se ele já estava aberto durante a instalação, reabra-o uma vez.
         </p>
         <details className="connection-repair">
-          <summary>Precisa reconectar o ChatGPT?</summary>
+          <summary>Precisa reconectar o Codex?</summary>
           <p>
             Se a integração parar de funcionar, este pedido orienta o assistente
             a recuperar a instalação existente.
@@ -603,7 +603,7 @@ export function Settings({
         <details className="connection-access">
           <summary>Acesso ao conteúdo</summary>
           <p>
-            Ao conectar, os trechos solicitados podem ser enviados ao ChatGPT.
+            Ao usar o MCP, os trechos solicitados são enviados ao modelo do Codex.
             Seus arquivos e backups permanecem neste computador. O acesso inclui
             leitura e criação de conteúdo; revisões de texto existente continuam
             passando pela sua aprovação.
@@ -649,7 +649,7 @@ export function Welcome({
       <BookIcon />
       <h2>Um espaço para o seu TCC.</h2>
       <p>
-        Organize o trabalho, converse com o ChatGPT e revise cada mudança com
+        Organize o trabalho, converse com o Codex e revise cada mudança com
         tranquilidade. Seus arquivos ficam neste computador.
       </p>
       <form

@@ -16,7 +16,8 @@
     "recover": "tsx scripts/maintenance.ts restore",
     "mcp": "tsx server/stdio.ts",
     "mcp:poc": "tsx scripts/mcp-poc.ts",
-    "assistant:prepare": "tsx scripts/prepare-assistant.ts"
+    "assistant:prepare": "tsx scripts/prepare-assistant.ts",
+    "assistant:connect": "tsx scripts/connect-codex.ts"
   },
   "dependencies": {
     "@citation-js/core": "^0.9.0",

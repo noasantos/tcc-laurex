@@ -9,9 +9,11 @@ Um ambiente local para organizar e revisar o TCC com o ChatGPT como colaborador 
 3. **macOS / Linux:** execute `Configurar.command`. É necessário Node.js LTS 24 instalado; se faltar, o script informa como obter a versão oficial.
 4. Na tela de boas-vindas, dê um nome ao projeto e crie a estrutura de capítulos ou importe seu arquivo pelas configurações.
 
-Nas próximas vezes, use **`Abrir-Laura.cmd`** no Windows ou **`Abrir-Laura.command`** no macOS/Linux. A aplicação abre em **http://localhost:3000**. Mantenha a janela de inicialização aberta. Para encerrar, use `Ctrl+C` nessa janela. Não é necessário compreender os componentes internos.
+O configurador também conecta o MCP ao **Codex local** e testa a leitura do projeto. É necessário ter Codex instalado; caso a CLI não seja encontrada, o configurador informa como instalar a CLI oficial. Se a conversa já estava aberta, reabra o Codex uma vez e retome a mesma conversa para carregar as ferramentas.
 
-**Para enviar à Laura:** o [prompt principal está aqui](docs/SETUP_PROMPT.txt). Ele orienta a instalação única, o início do site, a preparação MCP e a preservação do projeto atual no ChatGPT. Esse prompt fica no repositório; o site oferece somente [um pedido de reparo](docs/MCP_REPAIR_PROMPT.txt), caso a integração pare. Não compartilhe senhas nem chaves em conversas.
+Nas próximas vezes, peça no Codex: **“Abra meu Laura Workspace”**. Também pode usar **Abrir-Laura.cmd** ou **Abrir-Laura.command**. O app abre em http://localhost:3000 e continua rodando após fechar o terminal.
+
+**Para enviar à Laura:** [prompt de instalação no Codex local](docs/SETUP_PROMPT.txt). Ele prepara o aplicativo e o MCP no computador dela, sem túnel ou configuração de conta Platform.
 
 ## O que você pode fazer
 
@@ -28,15 +30,13 @@ Nas próximas vezes, use **`Abrir-Laura.cmd`** no Windows ou **`Abrir-Laura.comm
 
 ![Interface em modo escuro](docs/screenshots/dark.png)
 
-## Trabalhar com o ChatGPT
+## Trabalhar com o Codex local
 
-A conexão MCP começa **desligada**. O assistente local prepara leitura e escrita com autorização explícita; Configurações → ChatGPT permite consultar e revogar esse acesso. O ChatGPT pode criar capítulos, notas, comentários e propostas. Revisões de texto existente precisam de aprovação local antes de serem aplicadas. Uma edição não resolve um comentário automaticamente.
+O Codex inicia o MCP stdio diretamente no mesmo computador. A instalação autoriza leitura e escrita apenas neste workspace; Configurações → Codex local permite consultar e revogar esse acesso. Revisões de texto existente exigem proposta e aprovação local; uma edição não resolve comentários automaticamente.
 
-**Estado comprovado:** o servidor foi testado com clientes reais do SDK MCP, por stdio e HTTP autenticado. **A ligação à conta ChatGPT Pro da Laura exige configuração e uma chamada real nessa conta; não está certificada por esses testes locais.**
+Para conectar uma instalação existente, execute `npm run assistant:connect -- --allow-local-write`. O script registra caminhos absolutos, preserva configurações de outros servidores, recusa substituir uma conexão de outro projeto e testa o MCP real sem modificar o texto acadêmico. O registro fica fora do checkout. Não é necessário deixar um túnel ou terminal aberto. Após alterar a pasta de dados, conecte novamente para atualizar o destino.
 
-O caminho preferido é o Secure MCP Tunnel oficial: conexão de saída, sem abrir uma porta pública. A disponibilidade depende das permissões da conta e do workspace; a assinatura Pro, isoladamente, não prova essas permissões. Veja [docs/MCP.md](docs/MCP.md).
-
-A configuração é assistida uma vez: use [o prompt pronto](docs/SETUP_PROMPT.txt) e salve [o contexto](docs/PROJECT_CONTEXT.txt) no projeto existente do TCC no ChatGPT. A interface não inclui exportações nem troca manual de JSON. Consulte [operação e retomada](docs/OPERATING_MODEL.md).
+A conversa é a do Codex local; isso não importa automaticamente conversas antigas do ChatGPT. [Contexto acadêmico](docs/PROJECT_CONTEXT.txt) · [Operação e retomada](docs/OPERATING_MODEL.md). O fluxo remoto opcional do ChatGPT web está em [MCP.md](docs/MCP.md) e não faz parte da instalação padrão.
 
 ## Importar o TCC
 

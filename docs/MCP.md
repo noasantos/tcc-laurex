@@ -1,3 +1,5 @@
+> **Instalação padrão: Codex local.** Use `npm run assistant:connect -- --allow-local-write` ou os configuradores. Não há túnel nesse fluxo; consulte [operação local](OPERATING_MODEL.md). O restante deste documento descreve apenas a alternativa remota do ChatGPT web.
+
 # ChatGPT connection: evidence and setup
 
 Checked against official documentation during implementation on 17 October 2026:

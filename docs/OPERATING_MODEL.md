@@ -1,34 +1,25 @@
-# Operação assistida, dentro do projeto existente do ChatGPT
+# Operação com Codex local
 
-A instalação é feita uma vez com ajuda técnica; o uso diário permanece na conversa acadêmica existente. O site oferece leitura, comentários e revisão. Exportações e troca manual de JSON não aparecem nas configurações normais. Os endpoints técnicos foram preservados para suporte, sem exigir que Laura os utilize.
+Laura usa sua conversa no Codex instalado no computador. O site é a interface de leitura, comentários e aprovação. O MCP é um processo stdio local iniciado pelo Codex; não depende de túnel, conta Platform ou porta pública. O modelo do Codex continua dependendo da conexão normal do próprio produto à OpenAI; local refere-se ao servidor, às ferramentas e ao armazenamento, não a um modelo offline.
 
-## Preparação
+## Instalação única
 
-O prompt pronto é [SETUP_PROMPT.txt](SETUP_PROMPT.txt), distribuído pelo GitHub por quem auxilia Laura. Ele não aparece no site. A interface mantém somente [MCP_REPAIR_PROMPT.txt](MCP_REPAIR_PROMPT.txt), recolhido, para recuperação de uma integração já instalada. Ele distingue acesso real ao computador de uma conversa sem terminal. Um prompt não concede ferramentas, não autentica no GitHub privado e não instala um plugin por conta própria. O operador pode ser o usuário que auxilia Laura ou um assistente local com terminal autorizado. A assinatura Pro não comprova por si só as permissões exigidas pelo túnel e pelo workspace.
+Execute Configurar-Windows.cmd ou Configurar.command. Depois de instalar dependências e gerar a interface, o configurador executa `npm run assistant:connect -- --allow-local-write`, registra `laura-workspace` pelo comando oficial `codex mcp add`, habilita leitura/escrita deste workspace com backup anterior quando necessário e testa get_project_info por um cliente MCP real. Caminhos são absolutos e dados permanecem fora do checkout. O registro sem credenciais fica em `setup/codex.json` na pasta de dados.
 
-Depois de npm ci e npm run build, `npm run assistant:prepare -- --allow-chatgpt-write` prepara os consentimentos locais deste único workspace, faz snapshot da mudança e grava um registro sem credenciais fora do checkout. Sem a flag explícita, não altera nada. Isso não configura a conta ChatGPT, o túnel ou permissões externas.
+É necessário Codex local instalado. O script procura a CLI no ambiente, no PATH e nas localizações conhecidas do aplicativo macOS. No Windows reconhece o executável e a instalação npm oficial. Se não a encontrar, informa como instalar a CLI oficial; não declara sucesso nem configura um túnel como alternativa. O registro é restrito ao nome laura-workspace e recusa substituir uma conexão que aponta para outra pasta de dados.
 
-Configure o túnel oficial com perfil **stdio**, independente do processo do site, para permitir que o MCP inicie o site quando necessário. Use caminhos absolutos e o mesmo diretório de dados. Instale/configure o início de sessão do cliente no computador da Laura com a ajuda da versão realmente instalada. A tarefa agendada do Windows ou serviço de sessão deve iniciar o túnel sem janela de terminal; o cliente inicia o MCP stdio. Nenhuma tarefa agendada ou serviço de túnel foi instalado/testado nesta máquina como parte do desenvolvimento. Essa etapa depende das credenciais e conta de destino. Não habilite um serviço com um comando de exemplo sem validar seus caminhos e gestão de credenciais.
+O prompt distribuído pelo GitHub está em [SETUP_PROMPT.txt](SETUP_PROMPT.txt). O site oferece [MCP_REPAIR_PROMPT.txt](MCP_REPAIR_PROMPT.txt) como suporte. Reexecutar a conexão não cria um novo projeto nem novas conversas e não altera conteúdo acadêmico. Se a conexão MCP foi revogada, Abrir-Laura não a reabilita; executar novamente o configurador com sua autorização volta a habilitá-la.
 
-## Retomada
+## Uso diário
 
-- Site parado, túnel e MCP ativos: `get_workspace_runtime` identifica o estado e `ensure_workspace_running` inicia somente o servidor conhecido desta aplicação, em loopback, sem shell ou comandos escolhidos pelo ChatGPT. Se já estiver rodando, reutiliza. Se a porta pertencer a outro app/projeto, recusa sem encerrar processos.
-- Computador suspenso: não atende chamadas enquanto estiver suspenso. Após acordar, o túnel precisa reconectar.
-- Computador desligado/reiniciado: só um processo local configurado no início de sessão pode restabelecer o túnel. O ChatGPT remoto não consegue chamar uma ferramenta indisponível para se recuperar sozinho.
-- Túnel parado: retome o launcher/serviço local preparado pelo operador; depois valide readiness e leitura. Não reinstale nem recrie o banco.
+Retome a mesma conversa no Codex e peça “Abra meu Laura Workspace e consulte o projeto pelo MCP”. get_workspace_runtime verifica o site e ensure_workspace_running inicia o servidor conhecido em loopback quando necessário. Não encerra processos de outros projetos. O servidor roda separado do terminal e grava seu log na pasta de dados. Abrir-Laura.cmd ou Abrir-Laura.command também abre o site e pode ter a janela fechada depois de iniciar.
 
-O MCP registra logs operacionais e o servidor iniciado por ele grava `logs/workspace-runtime.log` fora do checkout. O launcher manual Abrir-Laura permanece como recurso de suporte, sem ser exigido como rotina após uma configuração automática validada.
+O Codex carrega a configuração MCP ao iniciar sua conexão. Se foi registrado durante uma conversa que não recebeu as ferramentas, reabra o Codex e retome essa conversa uma vez. Não se promete atualizar ferramentas de uma sessão já carregada. Após reiniciar o computador, abrir o Codex volta a disponibilizar o MCP; o site pode então ser iniciado por ele. Não é necessário instalar serviço de túnel ou tarefa agendada. Não há atendimento enquanto o computador estiver desligado ou suspenso.
 
-## Contexto no projeto do ChatGPT
+A orientação acadêmica está em [PROJECT_CONTEXT.txt](PROJECT_CONTEXT.txt); leia-a na conversa local sem inventar importação de históricos de outros produtos. Aprovação de propostas e confirmação de conclusão com comentários abertos continuam exclusivamente locais.
 
-Coloque [PROJECT_CONTEXT.txt](PROJECT_CONTEXT.txt) nas instruções ou arquivos do **projeto já existente**. Isso não pode ser feito só escrevendo um arquivo no repositório. A instalação deve verificar na conta real a disponibilidade do plugin na conversa existente, sem presumir que instalar uma ferramenta alterou todos os chats ou que o ChatGPT lembrará de instruções nunca salvas no projeto.
+## Evidências
 
-## Arquivo completo quando solicitado
+O configurador prova registro e comunicação stdio com o projeto correto. Isso é diferente de observar uma chamada feita pela conversa já aberta. Valide as duas coisas na instalação de destino. npm run mcp:poc usa dados temporários para leitura/escrita e bloqueios. CI Windows é diferente de instalação no PC da Laura.
 
-`create_project_archive` gera localmente um ZIP com backup validado por restauração, contendo documentos, planejamento, fontes originais, comentários, notas, versões e operações. Retorna caminho e URL local de download; não publica e não transmite o ZIP à nuvem. O ChatGPT pode orientar o download e só consegue anexá-lo na conversa se outra ferramenta efetivamente permitir essa transferência.
-
-## Aceitação na máquina de destino
-
-Verificar instalação única, leitura/escrita a partir da conta real, disponibilidade no chat existente, proposta recusada sem aprovação, site parado e religado pelo MCP, reinício/login do computador, suspensão/retomada e túnel interrompido. Só marcar cada cenário como validado depois de observá-lo. Testes locais de protocolo e CI Windows são evidências distintas.
-
-Fontes oficiais consultadas em 17/10/2026: [custom MCP](https://developers.openai.com/api/docs/guides/custom-mcp-server) e [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels). A primeira descreve ferramentas de escrita sujeitas às confirmações da conta; a segunda exige cliente ativo e permissões de túnel/workspace.
+O antigo cenário de ChatGPT web com túnel está documentado em [MCP.md](MCP.md) somente como alternativa remota, fora da instalação padrão. A documentação oficial da configuração local está em https://developers.openai.com/codex/mcp/.

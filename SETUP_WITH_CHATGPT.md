@@ -1,5 +1,5 @@
-# Preparar o ambiente uma vez
+# Preparar com Codex local
 
-Use o prompt completo em [docs/SETUP_PROMPT.txt](docs/SETUP_PROMPT.txt) com um assistente que tenha acesso autorizado ao computador. A conversa acadêmica continua no projeto existente do ChatGPT.
+Envie [o prompt de instalação](docs/SETUP_PROMPT.txt) à conversa do Codex no computador da Laura. O configurador instala o app, registra o MCP stdio e testa uma leitura do projeto. Não precisa de túnel ou configuração no ChatGPT web. Se o Codex já estava aberto, reabra uma vez e retome a mesma conversa.
 
-Depois da preparação, salve [docs/PROJECT_CONTEXT.txt](docs/PROJECT_CONTEXT.txt) nesse projeto. O operador deve verificar a conexão real e configurar a retomada do túnel no início da sessão. Veja [o modelo de operação](docs/OPERATING_MODEL.md). Um prompt sozinho não concede acesso ao computador ou permissões de conta.
+No dia a dia: “Abra meu Laura Workspace”. Veja [operação e retomada](docs/OPERATING_MODEL.md).
