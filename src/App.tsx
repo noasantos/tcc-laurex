@@ -52,7 +52,7 @@ import { VersionHistory } from "./components/History";
 import { Settings, Welcome } from "./components/Settings";
 export default function App() {
   const [state, setState] = useState<State | null>(null),
-    [page, setPage] = useState("document"),
+    [page, setPage] = useState("overview"),
     [chapterId, setChapterId] = useState(""),
     [modal, setModal] = useState(""),
     [error, setError] = useState(""),
