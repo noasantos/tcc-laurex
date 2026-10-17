@@ -550,7 +550,7 @@ a svg {
 .chapter-options .select-trigger {
   max-width: 170px;
 }
-.chapter-options button:last-child {
+.chapter-options > button:last-child {
   margin-left: auto;
 }
 .sidebar-collapsed .sidebar {
@@ -3952,8 +3952,14 @@ body,
   }
 }
 
-.chapter-status-control { position: relative; max-width: 380px; }
-.chapter-status-warning { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
+.chapter-status-control { display: inline-flex; flex: 0 0 auto; position: relative; max-width: 100%; }
+.chapter-status-control .select-trigger { margin: 0; max-width: 100%; }
+.chapter-status-notice { width: min(350px, calc(100vw - 24px)); padding: 14px; }
+.chapter-status-notice-content { display: flex; align-items: flex-start; gap: 9px; }
+.chapter-status-notice-content > svg { flex-shrink: 0; margin-top: 2px; color: var(--muted); }
+.chapter-status-notice-content p { flex: 1; min-width: 0; font-size: 12px; line-height: 1.6; margin: 0; }
+.chapter-status-notice-content .icon-button { flex-shrink: 0; width: 24px; height: 24px; min-height: 24px; padding: 4px; margin: -3px -3px 0 0; }
+@media (prefers-reduced-motion: reduce) { .chapter-status-notice { animation: none; } }
 .chapter-status-confirm { width: min(370px, calc(100vw - 24px)); padding: 18px; }
 .chapter-status-confirm p { font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
 .chapter-status-confirm .actions { justify-content: flex-end; gap: 8px; }

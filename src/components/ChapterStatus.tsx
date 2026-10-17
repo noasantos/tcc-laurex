@@ -1,3 +1,4 @@
+import { Info, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Chapter, State } from "../../server/types";
 import { Select, SelectOption } from "./Select";
@@ -22,6 +23,7 @@ export function ChapterStatus({
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Snapshot | null>(null);
   const [warning, setWarning] = useState("");
+  const controlRef = useRef<HTMLDivElement>(null);
   const releaseRef = useRef(release);
   releaseRef.current = release;
   useEffect(() => () => releaseRef.current(), []);
@@ -64,11 +66,14 @@ export function ChapterStatus({
     (c) => c.chapterId === chapter.id && c.status === "open",
   ).length;
   return (
-    <div className="chapter-status-control">
+    <div className="chapter-status-control" ref={controlRef}>
       <Popover
-        open={!!pending}
+        open={!!pending || !!warning}
         onOpenChange={(open) => {
-          if (!open && !busy) cancel();
+          if (!open && !busy) {
+            setWarning("");
+            if (pending) cancel();
+          }
         }}
       >
         <PopoverAnchor asChild>
@@ -93,7 +98,16 @@ export function ChapterStatus({
         <PopoverContent
           align="start"
           side="top"
-          className="chapter-status-confirm"
+          className={
+            pending ? "chapter-status-confirm" : "chapter-status-notice"
+          }
+          onOpenAutoFocus={(event) => {
+            if (!pending) event.preventDefault();
+          }}
+          onFocusOutside={(event) => {
+            if (!pending && controlRef.current?.contains(event.target as Node))
+              event.preventDefault();
+          }}
           onEscapeKeyDown={(event) => {
             if (busy) event.preventDefault();
           }}
@@ -101,48 +115,58 @@ export function ChapterStatus({
             if (busy) event.preventDefault();
           }}
         >
-          <div
-            role="alertdialog"
-            aria-modal="false"
-            aria-labelledby="completion-question"
-          >
-            <p id="completion-question">
-              Este capítulo tem {count} comentários sem resolução. Deseja
-              marcá-lo como concluído mesmo assim?
-            </p>
-            <div className="actions">
-              <button disabled={busy} onClick={cancel}>
-                Cancelar
-              </button>
+          {pending ? (
+            <div
+              role="alertdialog"
+              aria-modal="false"
+              aria-labelledby="completion-question"
+            >
+              <p id="completion-question">
+                Este capítulo tem {count} comentários sem resolução. Deseja
+                marcá-lo como concluído mesmo assim?
+              </p>
+              <div className="actions">
+                <button disabled={busy} onClick={cancel}>
+                  Cancelar
+                </button>
+                <button
+                  className="primary"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (!pending) return;
+                    setBusy(true);
+                    try {
+                      await apply(pending, "Concluído", true);
+                      setPending(null);
+                    } catch (error) {
+                      setWarning((error as Error).message);
+                      setPending(null);
+                    } finally {
+                      setBusy(false);
+                      release();
+                    }
+                  }}
+                >
+                  Concluir mesmo assim
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="chapter-status-notice-content" role="alert">
+              <Info size={16} aria-hidden="true" />
+              <p>{warning}</p>
               <button
-                className="primary"
-                disabled={busy}
-                onClick={async () => {
-                  if (!pending) return;
-                  setBusy(true);
-                  try {
-                    await apply(pending, "Concluído", true);
-                    setPending(null);
-                  } catch (error) {
-                    setWarning((error as Error).message);
-                    setPending(null);
-                  } finally {
-                    setBusy(false);
-                    release();
-                  }
-                }}
+                type="button"
+                className="icon-button"
+                aria-label="Fechar aviso de estado"
+                onClick={() => setWarning("")}
               >
-                Concluir mesmo assim
+                <X size={14} aria-hidden="true" />
               </button>
             </div>
-          </div>
+          )}
         </PopoverContent>
       </Popover>
-      {warning && (
-        <p role="alert" className="chapter-status-warning">
-          {warning}
-        </p>
-      )}
     </div>
   );
 }
