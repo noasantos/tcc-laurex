@@ -95,6 +95,7 @@ export default function App() {
   const stateRef = useRef<State | null>(null);
   const queue = useRef(Promise.resolve());
   const editorSave = useRef<{ flush: () => Promise<void>; release: () => void } | null>(null);
+  const [visibleCommentAnchors, setVisibleCommentAnchors] = useState<{ chapterId: string; ids: string[] }>({chapterId: "", ids: []});
   async function refresh() {
     const s = await request<State>("state");
     if (s.revision < (stateRef.current?.revision || 0)) return;
@@ -207,7 +208,7 @@ export default function App() {
     setCommentOpen(false);
     setChapterId(id);
     setPage("document");
-    setCommentPanel(Boolean(targetCommentId));
+    setCommentPanel(Boolean(targetCommentId) && !window.matchMedia("(max-width: 900px)").matches);
     setCommentId(targetCommentId || "");
     if (targetCommentId) setSearchNavigation(n => n + 1);
   }
@@ -388,6 +389,7 @@ export default function App() {
                       key={chapter.id}
                       chapter={chapter}
                       saveController={editorSave}
+                      onVisibleCommentsChange={setVisibleCommentAnchors}
                       comments={chapterComments}
                       focusCommentId={commentId}
                       focusRequest={searchNavigation}
@@ -520,6 +522,7 @@ export default function App() {
                     mutate={mutate}
                     chapterId={chapter.id}
                     selectedId={commentId}
+                    visibleAnchorIds={visibleCommentAnchors.chapterId === chapter.id ? visibleCommentAnchors.ids : []}
                     onNavigate={navigate}
                   />
                 </CommentSidebar>

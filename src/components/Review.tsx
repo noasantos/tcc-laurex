@@ -99,12 +99,14 @@ export function CommentsPanel({
   mutate,
   chapterId,
   selectedId,
+  visibleAnchorIds = [],
   onNavigate,
 }: {
   state: State;
   mutate: Mutate;
   chapterId?: string;
   selectedId?: string;
+  visibleAnchorIds?: string[];
   onNavigate: (id: string, commentId?: string) => void;
 }) {
   const [author, setAuthor] = useState(""),
@@ -211,6 +213,7 @@ export function CommentsPanel({
           ? resolveAnchor(chapter.content, c)
           : { status: "orphan", ranges: [] };
         const linked = anchor.ranges.length > 0;
+        const alreadyVisible = linked && visibleAnchorIds.includes(c.id);
         return (
           <article
             key={c.id}
@@ -269,6 +272,8 @@ export function CommentsPanel({
                 <CopyCommentReference comment={c} />
                 <button
                   className="text-button"
+                  disabled={alreadyVisible}
+                  title={alreadyVisible ? "Trecho já visível no documento" : undefined}
                   onClick={() => onNavigate(c.chapterId, c.id)}
                 >
                   {linked ? "Ir ao trecho" : "Abrir capítulo"}{" "}

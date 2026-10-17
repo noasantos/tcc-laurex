@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { isCommentAnchorVisible } from "./comment-visibility";
 import { CommentHover } from "./CommentHover";
 import { commentReference } from "../../server/comment-reference";
 
@@ -144,6 +145,7 @@ export function DocumentEditor({
   focusRequest = 0,
   onSave,
   saveController,
+  onVisibleCommentsChange,
   onComment,
   onOpenComment,
   onCitation,
@@ -153,6 +155,7 @@ export function DocumentEditor({
   onInsert,
 }: {
   saveController: React.MutableRefObject<{ flush: () => Promise<void>; release: () => void } | null>;
+  onVisibleCommentsChange: (value: { chapterId: string; ids: string[] }) => void;
   chapter: Chapter;
   comments: Comment[];
   focusCommentId?: string;
@@ -187,6 +190,8 @@ export function DocumentEditor({
   const [sourceMode, setSourceMode] = useState<"visual" | "source" | "split">(
     "visual",
   );
+  const sourceModeRef = useRef(sourceMode);
+  sourceModeRef.current = sourceMode;
   const [hovered, setHovered] = useState<{ id: string; rect: DOMRect } | null>(
     null,
   );
@@ -548,28 +553,127 @@ export function DocumentEditor({
     };
   }, []);
   useEffect(() => {
+    // Explicit navigation reveals the visual document; simply switching to code
+    // afterwards must remain possible even while a comment is selected.
+    if (focusCommentId && sourceModeRef.current === "source")
+      setSourceMode("visual");
+  }, [focusCommentId, focusRequest]);
+  useEffect(() => {
+    if (!editor) return;
+    const body = visual.current;
+    const pane = sourceMode === "split" ? body?.parentElement : body;
+    if (!body || !pane) return;
+    const overlay = body.closest(".document-layout")?.querySelector<HTMLElement>(".animated-comments");
+    let frame = 0,
+      last = "";
+    let observedRoot: HTMLElement | null = null;
+    const measure = () => {
+      frame = 0;
+      const ids: string[] = [];
+      const currentRoot = body.querySelector<HTMLElement>(".academic-editor");
+      if (currentRoot && currentRoot !== observedRoot) {
+        if (observedRoot) resize.unobserve(observedRoot);
+        resize.observe(currentRoot);
+        observedRoot = currentRoot;
+      }
+      if (sourceMode !== "source" && body.getClientRects().length) {
+        const area = pane.getBoundingClientRect(),
+          column = body.getBoundingClientRect();
+        const viewport = {
+          top: Math.max(0, area.top, column.top),
+          bottom: Math.min(innerHeight, area.bottom, column.bottom),
+          left: Math.max(0, area.left, column.left),
+          right: Math.min(innerWidth, area.right, column.right),
+        };
+        // On narrow windows the comments panel covers the document rather than
+        // resizing it. Covered text is not a visible destination.
+        if (overlay?.dataset.open === "true" && getComputedStyle(overlay).position === "absolute") {
+          const layout = overlay.parentElement!.getBoundingClientRect();
+          viewport.right = Math.min(viewport.right, layout.right - overlay.offsetWidth);
+        }
+        const anchors = new Map<string, DOMRect[]>();
+        for (const mark of body.querySelectorAll<HTMLElement>(
+          "[data-comment-id]",
+        )) {
+          const id = mark.dataset.commentId!;
+          anchors.set(id, [...(anchors.get(id) || []), ...mark.getClientRects()]);
+        }
+        for (const [id, lines] of anchors)
+          if (isCommentAnchorVisible(lines, viewport)) ids.push(id);
+      }
+      const key = JSON.stringify(ids.sort());
+      if (key !== last) {
+        last = key;
+        onVisibleCommentsChange({ chapterId, ids });
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    const resize = new ResizeObserver(schedule);
+    resize.observe(pane);
+    resize.observe(body);
+    const changes = new MutationObserver(schedule);
+    changes.observe(body, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["class", "data-comment-id"],
+    });
+    if (overlay) changes.observe(overlay, { attributes: true, attributeFilter: ["data-open", "class"] });
+    pane.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      changes.disconnect();
+      pane.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      onVisibleCommentsChange({ chapterId, ids: [] });
+    };
+  }, [editor, chapterId, sourceMode, onVisibleCommentsChange]);
+  useEffect(() => {
     if (!editor || !focusCommentId) return;
     editor.view.dispatch(editor.state.tr.setMeta("comments", true));
     const pane =
       sourceMode === "split" ? visual.current?.parentElement : visual.current;
     if (!pane) return;
     const reveal = () => {
-      const target = editor.view.dom.querySelector<HTMLElement>(
+      const target = visual.current?.querySelector<HTMLElement>(
         ".comment-target-highlight",
       );
       if (!target) return;
+      const boxes = [
+        ...visual.current!.querySelectorAll<HTMLElement>(
+          ".comment-target-highlight",
+        ),
+      ].map((mark) => mark.getBoundingClientRect());
+      const excerptHeight =
+        Math.max(...boxes.map((box) => box.bottom)) -
+        Math.min(...boxes.map((box) => box.top));
+      const offset =
+        excerptHeight <= pane.clientHeight
+          ? Math.min(
+              pane.clientHeight * 0.25,
+              Math.max(0, pane.clientHeight - excerptHeight - 8),
+            )
+          : pane.clientHeight * 0.25;
       const top =
         target.getBoundingClientRect().top -
         pane.getBoundingClientRect().top +
         pane.scrollTop;
       pane.scrollTo({
-        top: Math.max(0, top - pane.clientHeight * 0.25),
+        top: Math.max(0, top - offset),
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "instant"
           : "smooth",
       });
     };
     reveal();
+    const revealFrame = requestAnimationFrame(reveal);
+    editor.on("create", reveal);
     const panel = pane
       .closest(".document-layout")
       ?.querySelector<HTMLElement>(".animated-comments");
@@ -582,7 +686,11 @@ export function DocumentEditor({
         reveal();
     };
     panel?.addEventListener("transitionend", afterTransition);
-    return () => panel?.removeEventListener("transitionend", afterTransition);
+    return () => {
+      cancelAnimationFrame(revealFrame);
+      editor.off("create", reveal);
+      panel?.removeEventListener("transitionend", afterTransition);
+    };
   }, [focusCommentId, focusRequest, editor, sourceMode]);
   useEffect(() => {
     const pane =
