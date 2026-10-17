@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -116,6 +117,12 @@ test("runtime religa somente o site do projeto, reutiliza processo e recusa outr
     }
     if (oldPort === undefined) delete process.env.PORT;
     else process.env.PORT = oldPort;
-    rmSync(root, { recursive: true, force: true });
+    // Windows may release inherited log/database handles shortly after process exit.
+    await rm(root, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 150,
+    });
   }
 });
