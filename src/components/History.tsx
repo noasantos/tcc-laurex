@@ -1,6 +1,6 @@
 import { Select, SelectOption } from "./Select";
 import { useEffect, useState } from "react";
-import { History, Download, ShieldCheck } from "lucide-react";
+import { History, ShieldCheck } from "lucide-react";
 import { request } from "../api";
 import type { State } from "../../server/types";
 import type { Mutate } from "./Review";
@@ -42,9 +42,6 @@ export function VersionHistory({
         </p>
       )}
       <div className="actions">
-        <a className="button" href="/api/export" download>
-          <Download size={16} /> Exportar backup completo
-        </a>
         <button
           onClick={async () => {
             try {

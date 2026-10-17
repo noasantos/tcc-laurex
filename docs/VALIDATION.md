@@ -19,3 +19,7 @@ A prova de protocolo não certifica a conta ChatGPT Pro de Laura. Instalação d
 Os scripts Windows e a matriz de CI estão incluídos. Uma execução de CI Windows, quando disponível, não substitui abrir o app e testar os launchers no PC de Laura. O drag-and-drop usa react-dropzone; o seletor de arquivo foi exercitado no navegador, sem afirmar que foi realizado um arraste a partir do gerenciador de arquivos do sistema.
 
 Word permanece uma importação de texto, com original preservado. LaTeX complexo fica protegido quando não pode ser convertido com segurança. A formatação ABNT/UFRJ do projeto original não foi certificada por estes testes. Snapshots completos têm custo crescente com o histórico; a implementação ainda não equivale a um editor de documentos arbitrariamente grandes com carregamento paginado.
+
+## Revisão de espaçamento
+
+Veja [a auditoria com capturas e medições](SPACING_AUDIT.md). Padding horizontal corrigido em capítulos, métricas e linhas de lista; cards análogos e estados hover/foco revisados em dados temporários.

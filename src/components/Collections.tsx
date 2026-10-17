@@ -368,8 +368,8 @@ export function ReferenceDetails({
             className="list-link"
             onClick={() => onNavigate(c.id)}
           >
-            {c.title}
-            <ArrowUpRight size={14} />
+            <span>{c.title}</span>
+            <ArrowUpRight className="list-link-trailing" size={14} />
           </button>
         ))
       ) : (
@@ -902,7 +902,7 @@ export function Overview({
             onClick={() => onPage("notes")}
           >
             <Lightbulb size={17} />
-            {n.title || n.content.slice(0, 90)}
+            <span>{n.title || n.content.slice(0, 90)}</span>
           </button>
         ))}
     </section>
