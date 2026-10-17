@@ -1,3 +1,4 @@
+import { LoaderCircle, CircleAlert } from "lucide-react";
 import "./data-location.css";
 import { Button } from "./ui/button";
 import { FolderInput, ChevronDown } from "lucide-react";
@@ -42,6 +43,9 @@ export function Settings({
     }
   }
   const [importReset, setImportReset] = useState(0);
+  const [integrity, setIntegrity] = useState<
+    "checking" | "success" | "issue" | "error" | null
+  >(null);
   const [diagnostic, setDiagnostic] = useState<any>(null),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
@@ -60,6 +64,7 @@ export function Settings({
       .catch((e) => setMessage(e.message));
   }, []);
   async function doWork(fn: () => Promise<any>) {
+    setIntegrity(null);
     setBusy(true);
     try {
       await fn();
@@ -322,6 +327,7 @@ export function Settings({
         </section>
         <div className="actions">
           <button
+            disabled={busy}
             onClick={() =>
               doWork(async () => {
                 const r = await request("backup", {});
@@ -332,17 +338,83 @@ export function Settings({
             <ShieldCheck size={16} /> Fazer backup agora
           </button>
           <button
-            onClick={() =>
-              doWork(async () => {
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setMessage("");
+              setIntegrity("checking");
+              try {
                 const r = await request("diagnostics");
                 setDiagnostic(r);
-                setMessage("Verificação SQLite: " + JSON.stringify(r.database));
-              })
-            }
+                const healthy =
+                  Array.isArray(r.database) &&
+                  r.database.length === 1 &&
+                  r.database[0]?.integrity_check === "ok" &&
+                  Array.isArray(r.foreignKeys) &&
+                  r.foreignKeys.length === 0;
+                setIntegrity(healthy ? "success" : "issue");
+              } catch {
+                setIntegrity("error");
+              } finally {
+                setBusy(false);
+              }
+            }}
           >
-            Verificar integridade
+            {integrity === "checking" && (
+              <LoaderCircle
+                size={14}
+                className="integrity-spinner"
+                aria-hidden="true"
+              />
+            )}
+            {integrity === "checking"
+              ? "Verificando…"
+              : "Verificar integridade"}
           </button>
         </div>
+        {integrity && (
+          <div
+            className="integrity-result"
+            data-state={integrity}
+            role={
+              integrity === "issue" || integrity === "error"
+                ? "alert"
+                : "status"
+            }
+          >
+            {integrity === "checking" ? (
+              <LoaderCircle
+                size={17}
+                className="integrity-spinner"
+                aria-hidden="true"
+              />
+            ) : integrity === "success" ? (
+              <CheckCircle2 size={17} aria-hidden="true" />
+            ) : (
+              <CircleAlert size={17} aria-hidden="true" />
+            )}
+            <div>
+              <strong>
+                {integrity === "checking"
+                  ? "Verificando seus dados"
+                  : integrity === "success"
+                    ? "Está tudo certo"
+                    : integrity === "issue"
+                      ? "Verificação precisa de atenção"
+                      : "Não foi possível verificar agora"}
+              </strong>
+              <p>
+                {integrity === "checking"
+                  ? "Conferindo o banco de dados e os vínculos do projeto…"
+                  : integrity === "success"
+                    ? "Nenhum problema encontrado no banco de dados ou nos vínculos do projeto."
+                    : integrity === "issue"
+                      ? "Não foi possível confirmar a integridade dos dados. A verificação não alterou seus arquivos."
+                      : "Tente novamente. Seus arquivos permanecem preservados."}
+              </p>
+            </div>
+          </div>
+        )}
         <label className="button">
           <Upload size={16} /> Restaurar backup
           <input
@@ -457,7 +529,7 @@ export function Settings({
           </button>
         </details>
       </div>
-      {(message || busy) && (
+      {(message || (busy && integrity !== "checking")) && (
         <p className="notice" role="status">
           {busy ? "Processando…" : message}
         </p>
