@@ -21,86 +21,8 @@ import type { State, Note, Reference } from "../../server/types";
 import { plain } from "../../server/types";
 import type { Mutate } from "./Review";
 import { Empty, Field, date } from "./Primitives";
-export const categories = [
-  "Pensamento",
-  "Dúvida",
-  "Hipótese",
-  "Tarefa",
-  "Referência a investigar",
-  "Decisão acadêmica",
-  "Sugestão da IA",
-];
-function NoteForm({
-  note,
-  onCancel,
-  mutate,
-  projectRevision,
-}: {
-  note: Note | "new";
-  onCancel: () => void;
-  mutate: Mutate;
-  projectRevision: number;
-}) {
-  const base = useRef(projectRevision);
-  return (
-    <form
-      className="inline-editor note-composer"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const f = new FormData(e.currentTarget);
-        await mutate(note === "new" ? "create_note" : "update_note", {
-          ...(note === "new"
-            ? {}
-            : { noteId: note.id, expectedRevision: base.current }),
-          title: String(f.get("title") || "").trim() || "Nova ideia",
-          content: f.get("content"),
-          category: f.get("category"),
-        });
-        onCancel();
-      }}
-    >
-      <div className="note-composer-title-row">
-        <input
-          className="note-composer-title"
-          aria-label="Título da ideia"
-          name="title"
-          autoFocus
-          maxLength={200}
-          defaultValue={note === "new" ? "" : note.title}
-          placeholder="Nova ideia"
-        />
-        <button type="button" className="text-button" onClick={onCancel}>
-          Cancelar
-        </button>
-      </div>
-      <textarea
-        className="note-composer-content"
-        aria-label="Sua ideia"
-        required
-        name="content"
-        rows={5}
-        defaultValue={note === "new" ? "" : note.content}
-        placeholder="Escreva um pensamento, uma dúvida ou algo para retomar depois…"
-      />
-      <div className="note-composer-meta">
-        <label htmlFor="note-category">Tipo de ideia</label>
-        <Select
-          id="note-category"
-          aria-label="Tipo de ideia"
-          name="category"
-          defaultValue={note === "new" ? "Pensamento" : note.category}
-        >
-          {categories.map((c) => (
-            <SelectOption key={c}>{c}</SelectOption>
-          ))}
-        </Select>
-      </div>
-      <div className="actions">
-        <button className="primary">Guardar ideia</button>
-      </div>
-    </form>
-  );
-}
+import { NoteComposer as NoteForm, categories } from "./NoteComposer";
+export { categories } from "./NoteComposer";
 export function Notebook({
   state,
   mutate,

@@ -1,17 +1,16 @@
 .note-composer {
-  padding: 10px 0 24px;
-}
-.note-composer-title-row {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 18px;
+  width: 100%;
+  max-width: 760px;
+  padding: 4px 0 28px;
+  margin-bottom: 16px;
+  animation: note-composer-enter 180ms ease-out;
 }
 .note-composer .note-composer-title {
-  flex: 1;
+  display: block;
   min-width: 0;
   width: 100%;
-  padding: 12px 0;
+  padding: 10px 0 12px;
+  margin-bottom: 20px;
   border: 0;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
@@ -20,67 +19,23 @@
   font-size: 24px;
   font-weight: 550;
   line-height: 1.4;
-  letter-spacing: -0.5px;
+  letter-spacing: -.5px;
   outline: none;
   box-shadow: none;
   transition: border-color 140ms;
 }
-.note-composer-title::placeholder {
-  color: var(--muted);
-  opacity: 1;
-}
-.note-composer .note-composer-title:focus {
-  border-bottom-color: var(--muted);
-}
-.note-composer-title-row .text-button {
-  flex-shrink: 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-.note-composer .note-composer-content {
-  display: block;
-  width: 100%;
-  min-height: 148px;
-  resize: vertical;
-  padding: 6px 0 14px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.85;
-  outline: none;
-}
-.note-composer-content::placeholder {
-  color: var(--muted);
-  opacity: 1;
-}
-.note-composer-content:focus-visible {
-  outline: 1px solid var(--line);
-  outline-offset: 5px;
-}
-.note-composer-meta {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin: 12px 0 16px;
-}
-.note-composer-meta label {
-  font-size: 11px;
-  color: var(--muted);
-}
-.note-composer .actions {
-  margin-top: 0;
-}
-@media (max-width: 760px) {
-  .note-composer-title-row {
-    gap: 12px;
-  }
-  .note-composer .note-composer-title {
-    font-size: 22px;
-  }
+.note-composer-title::placeholder { color: var(--muted); opacity: 1; }
+.note-composer .note-composer-title:focus-visible { border-bottom-color: var(--muted); }
+.note-composer-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.note-composer-caption { display:flex; justify-content:space-between; gap:12px; margin:12px 2px 0; font-size:11px; line-height:1.6; color:var(--muted); }
+.note-composer-shortcut { white-space:nowrap; }
+.note-composer-error { font-size:12px; margin:12px 0 0; }
+@keyframes note-composer-enter { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+@media (prefers-reduced-motion:reduce) { .note-composer { animation:none; } }
+@media (max-width:600px) {
+  .note-composer .note-composer-title { font-size:22px; }
+  .note-composer-shortcut { display:none; }
+  .note-composer-actions { margin-left:auto; }
 }
 .notebook-empty {
   padding: 28px 0;

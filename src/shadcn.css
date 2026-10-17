@@ -7,6 +7,8 @@
 @theme inline {
   --color-background: var(--surface);
   --color-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-text);
   --color-popover: var(--surface);
   --color-popover-foreground: var(--text);
   --color-accent: var(--selected);
@@ -30,7 +32,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   [data-slot="select-content"],
-  [data-slot="popover-content"] {
+  [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"] {
     animation: none !important;
   }
 }
@@ -38,7 +41,8 @@
 /* Apply shadcn's border token locally; the existing app keeps its own base styles. */
 @layer base {
   [data-slot="select-content"],
-  [data-slot="popover-content"] {
+  [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"] {
     border-color: var(--color-border);
   }
 }
@@ -53,4 +57,10 @@
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--line);
   --sidebar-ring: var(--muted);
+}
+
+/* Keep legacy button defaults from adding outlines to shadcn ghost actions. */
+button[data-variant="ghost"] {
+  border-color: transparent;
+  background: transparent;
 }
