@@ -1,3 +1,4 @@
+import { NavigationWorkspace } from "./components/NavigationWorkspace";
 import { HeaderSearch } from "./components/HeaderSearch";
 import { Select, SelectOption } from "./components/Select";
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
@@ -11,8 +12,6 @@ import {
   MessageSquare,
   History,
   Plus,
-  PanelLeftClose,
-  PanelLeft,
   FileText,
   Library,
   ChevronDown,
@@ -57,7 +56,6 @@ export default function App() {
     [theme, setTheme] = useState(
       localStorage.getItem("laura-theme") || "system",
     ),
-    [collapsed, setCollapsed] = useState(() => window.innerWidth < 760),
     [commentDraft, setCommentDraft] = useState<
       (SelectionAnchor & { chapterId?: string }) | null
     >(null),
@@ -247,7 +245,6 @@ export default function App() {
     <div
       className={
         "app-shell " +
-        (collapsed ? "sidebar-collapsed" : "") +
         (["plan", "chapter", "metadata"].includes(modal) || recovery
           ? " has-side-sheet"
           : "")
@@ -255,16 +252,6 @@ export default function App() {
     >
       <header className="app-header">
         <div className="brand">
-          <button
-            className="brand-icon sidebar-toggle"
-            aria-label={collapsed ? "Mostrar navegação" : "Recolher navegação"}
-            title={collapsed ? "Mostrar navegação" : "Recolher navegação"}
-            aria-expanded={!collapsed}
-            aria-controls="workspace-sidebar"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
-          </button>
           <span>Laura Workspace</span>
         </div>
         <div className="header-actions">
@@ -317,8 +304,7 @@ export default function App() {
           </button>
         </div>
       </header>
-      <div className="workspace">
-        <aside className="sidebar" id="workspace-sidebar">
+      <NavigationWorkspace navigation={<>
           <nav>
             {nav("Visão geral", "overview", LayoutDashboard)}
             {nav("Caderno de ideias", "notes", NotebookPen)}
@@ -382,7 +368,7 @@ export default function App() {
             <span className="local-dot" />
             Neste computador
           </div>
-        </aside>
+        </>}>
         <main className="main-content">
           {error && (
             <div className="error-banner" role="alert">
@@ -670,7 +656,7 @@ export default function App() {
             </section>
           )}
         </main>
-      </div>
+      </NavigationWorkspace>
       {welcome && (
         <Modal title="Bem-vinda, Laura" onClose={closeWelcome}>
           <Welcome

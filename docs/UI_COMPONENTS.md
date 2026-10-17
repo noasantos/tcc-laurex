@@ -15,3 +15,11 @@ Comment lists show the saved selection and the instruction together. Previews ca
 The idea composer places a 200-character optional title before the content. Its underline replaces the boxed field; an empty/whitespace title saves as “Nova ideia”. The category control remains a standard official Select. Empty notebooks use an inline explanation; searches with no matches retain their filters so the user can recover.
 
 “Copiar referência” copies a short human-readable reference plus the exact comment ID and MCP lookup instructions, without copying the academic text or comment body. `get_comment_context` accepts full IDs and unique `C-xxxxxxxx` references; ambiguous prefixes fail rather than selecting an arbitrary comment. Context includes project/chapter revisions, original quote, safely resolved current excerpt, replies, history and associated proposals.
+
+## Navigation sidebar
+
+The navigation uses the official `@shadcn/sidebar` (New York/Radix, installed by CLI), including its provider, offcanvas layout and mobile Sheet. `NavigationWorkspace` adds separate pinned and temporary-hover states. Hover never claims a layout gap; only explicit pinning reserves width. A narrow left-edge activation area uses 140ms hover intent and a 220ms exit grace period. Pointer traversal into the menu cancels dismissal; selecting a destination dismisses a temporary preview. The visible controls live inside the navigation, never in the app header.
+
+The scoped layout uses a transform-only 260ms `cubic-bezier(.22,1,.36,1)` slide and the same timing for the pinned layout gap. No display toggle or unmount interrupts the desktop slide; hidden navigation is inert. Reduced motion removes the transitions. The only behavioral patch to the upstream provider preserves Cmd/Ctrl+B inside text inputs and contenteditable editors instead of intercepting bold formatting. Mobile uses the official sidebar Sheet behavior. The pin preference is local; hover does not persist as a preference.
+
+References: [official Sidebar](https://ui.shadcn.com/docs/components/radix/sidebar), [Notion sidebar controls](https://www.notion.com/help/navigate-with-the-sidebar).
