@@ -3949,3 +3949,18 @@ body,
     gap: 12px;
   }
 }
+
+/* One persistent navigation control, aligned with the sidebar icon column. */
+.brand .sidebar-toggle {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.brand .sidebar-toggle svg { width: 18px; height: 18px; }
+.brand .sidebar-toggle:hover { background: var(--selected); color: var(--text); }

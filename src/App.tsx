@@ -256,11 +256,14 @@ export default function App() {
       <header className="app-header">
         <div className="brand">
           <button
-            className="brand-icon"
+            className="brand-icon sidebar-toggle"
             aria-label={collapsed ? "Mostrar navegação" : "Recolher navegação"}
+            title={collapsed ? "Mostrar navegação" : "Recolher navegação"}
+            aria-expanded={!collapsed}
+            aria-controls="workspace-sidebar"
             onClick={() => setCollapsed(!collapsed)}
           >
-            <BookOpen size={25} />
+            {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
           </button>
           <span>Laura Workspace</span>
         </div>
@@ -315,16 +318,7 @@ export default function App() {
         </div>
       </header>
       <div className="workspace">
-        <aside className="sidebar">
-          <div className="sidebar-project">
-            <span title={state.name}>{state.name}</span>
-            <button
-              aria-label="Recolher navegação"
-              onClick={() => setCollapsed(true)}
-            >
-              <PanelLeftClose size={16} />
-            </button>
-          </div>
+        <aside className="sidebar" id="workspace-sidebar">
           <nav>
             {nav("Visão geral", "overview", LayoutDashboard)}
             {nav("Caderno de ideias", "notes", NotebookPen)}
@@ -390,15 +384,6 @@ export default function App() {
           </div>
         </aside>
         <main className="main-content">
-          {collapsed && (
-            <button
-              className="show-sidebar"
-              aria-label="Mostrar navegação"
-              onClick={() => setCollapsed(false)}
-            >
-              <PanelLeft size={20} />
-            </button>
-          )}
           {error && (
             <div className="error-banner" role="alert">
               <span>{error}</span>
