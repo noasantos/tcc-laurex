@@ -994,7 +994,6 @@ export function DocumentEditor({
         <div className="toolbar-end">
           {button("Desfazer", Undo2, () => editor.chain().focus().undo().run())}
           {button("Refazer", Redo2, () => editor.chain().focus().redo().run())}
-          {button("Adicionar comentário", MessageCirclePlus, addComment)}
         </div>
       </div>
       <div

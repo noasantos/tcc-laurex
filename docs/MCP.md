@@ -60,3 +60,9 @@ Use `get_comment_context` e então `propose_comment_edit` com `commentId`, `chap
 `get_comment_context` / `get_comment_history` devolvem as propostas completas vinculadas, com snapshots antes/depois, estado, datas, versão aplicada e operação. O histórico do comentário registra a proposta e sua aplicação. Aplicar, rejeitar ou responder não conclui o comentário: só `resolve_comment` (decisão explícita) e `reopen_comment` mudam entre `open` e `resolved`. `set_comment_state` aceita somente esses dois valores; metadados antigos de “análise” são preservados em backups, mas não representam um terceiro estado.
 
 Na interface, **Concluir** e **Reabrir** ficam no cabeçalho do comentário. **Antes e depois** abre uma comparação independente das respostas; **Ver no documento** amplia a comparação em uma área somente leitura, com contexto recolhido e opção de fonte LaTeX. São snapshots históricos, não uma promessa de que o documento atual ainda corresponda à proposta.
+
+### Autoria de comentários e respostas
+
+`create_comment` e `reply_to_comment` aceitam `author: "Laura" | "ChatGPT"`. Na interface, o padrão é Laura; pelo MCP, o padrão é ChatGPT. Use Laura quando ela ditar ou pedir explicitamente o registro de uma orientação própria. Quando ela pedir uma avaliação, os comentários da avaliação devem ter autor ChatGPT. A origem da operação (`origin: mcp`) permanece registrada mesmo com autor Laura; a interface identifica esse caso como “Laura · via ChatGPT”. Respostas seguem a mesma regra. A autoria não concede aprovação nem conclui o comentário.
+
+A página Comentários reúne todos os estados em abas com contagem, pesquisa, capítulo, autor, períodos recentes e ordenação. Não oferece um botão de novo comentário: Laura seleciona um trecho no documento e usa a ação contextual Comentar, ou pede o registro ao ChatGPT.

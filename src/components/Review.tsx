@@ -1,16 +1,13 @@
 import { CopyCommentReference } from "./CopyCommentReference";
-import { commentReference } from "../../server/comment-reference";
+import { CommentFilters } from "./CommentFilters";
+import { selectComments } from "./comment-filters";
+import { Tabs, TabsContent } from "./ui/tabs";
+import { Badge } from "./ui/badge";
+import "./comment-workspace.css";
 import { CommentText } from "./CommentText";
 import "./comments.css";
-import { Select, SelectOption } from "./Select";
 import { useState, useEffect } from "react";
-import {
-  MessageSquare,
-  ArrowUpRight,
-  CheckCircle2,
-  RotateCcw,
-  X,
-} from "lucide-react";
+import { ArrowUpRight, CheckCircle2, RotateCcw, X } from "lucide-react";
 import type { State, Comment, Proposal } from "../../server/types";
 import { ChangeComparison } from "./ChangeComparison";
 import { resolveAnchor } from "../../server/anchors";
@@ -153,15 +150,18 @@ export function CommentsPanel({
   onNavigate: (id: string, commentId?: string) => void;
 }) {
   const [author, setAuthor] = useState(""),
-    [since, setSince] = useState("");
-  const [filter, setFilter] = useState(selectedId ? "all" : "open"),
+    [period, setPeriod] = useState(""),
+    [sort, setSort] = useState("newest");
+  const [filter, setFilter] = useState(
+      chapterId && !selectedId ? "open" : "all",
+    ),
     [search, setSearch] = useState(""),
     [expanded, setExpanded] = useState(""),
     [chapterFilter, setChapterFilter] = useState(chapterId || "");
   useEffect(() => {
     if (selectedId) {
       const item = document.getElementById("comment-" + selectedId);
-      const pane = item?.closest<HTMLElement>(".review-panel");
+      const pane = item?.closest<HTMLElement>(".comments-list");
       if (item && pane) {
         const row = item.getBoundingClientRect(),
           area = pane.getBoundingClientRect();
@@ -170,255 +170,264 @@ export function CommentsPanel({
       }
     }
   }, [selectedId]);
-  const comments = state.comments.filter(
-    (c) =>
-      (!chapterFilter || c.chapterId === chapterFilter) &&
-      (filter === "all" || c.status === filter) &&
-      (!author || (c.author || "Laura") === author) &&
-      (!since || c.createdAt.slice(0, 10) >= since) &&
-      (JSON.stringify(c) + commentReference(c.id))
-        .toLowerCase()
-        .includes(search.toLowerCase()),
+  const result = selectComments(state.comments, {
+    chapterId: chapterFilter,
+    author,
+    period,
+    sort,
+    query: search,
+  });
+  const comments = result.comments.filter(
+    (c) => filter === "all" || c.status === filter,
   );
   return (
-    <section className="review-panel">
-      <div className="page-heading">
-        <div>
+    <Tabs
+      value={filter}
+      onValueChange={setFilter}
+      className={
+        "review-panel comments-workspace " + (chapterId ? "is-contextual" : "")
+      }
+    >
+      <div className="comments-page-heading">
+        <div className="comments-title-line">
           <h1>Comentários</h1>
-          <p>Orientações, decisões e alterações, no mesmo lugar.</p>
+          <Badge variant="ghost">
+            {
+              state.comments.filter(
+                (c) => !chapterId || c.chapterId === chapterId,
+              ).length
+            }
+          </Badge>
         </div>
-        <MessageSquare size={23} />
-      </div>
-      <div className="filters">
-        <Select
-          aria-label="Estado dos comentários"
-          value={filter}
-          onValueChange={(value) => setFilter(value)}
-        >
-          <SelectOption value="open">Em aberto</SelectOption>
-          <SelectOption value="resolved">Concluídos</SelectOption>
-          <SelectOption value="all">Todos</SelectOption>
-        </Select>
         {!chapterId && (
-          <>
-            <Select
-              aria-label="Capítulo dos comentários"
-              value={chapterFilter}
-              onValueChange={(value) => setChapterFilter(value)}
-            >
-              <SelectOption value="">Todos os capítulos</SelectOption>
-              {state.chapters.map((c) => (
-                <SelectOption value={c.id} key={c.id}>
-                  {c.title}
-                </SelectOption>
-              ))}
-            </Select>
-            <Select
-              aria-label="Autor do comentário"
-              value={author}
-              onValueChange={(value) => setAuthor(value)}
-            >
-              <SelectOption value="">Todos os autores</SelectOption>
-              <SelectOption>Laura</SelectOption>
-              <SelectOption>ChatGPT</SelectOption>
-            </Select>
-            <input
-              aria-label="Comentários a partir de"
-              type="date"
-              value={since}
-              onChange={(e) => setSince(e.target.value)}
-            />
-          </>
+          <p>Orientações, decisões e alterações, no mesmo lugar.</p>
         )}
-        <input
-          placeholder="Pesquisar comentários…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
       </div>
-      {!comments.length && (
-        <Empty
-          title="Tudo em ordem por aqui"
-          description="Comentários sobre o texto e as respostas do ChatGPT aparecem aqui."
-        />
-      )}
-      {comments.map((c) => {
-        const proposals = state.proposals.filter((p) => p.commentId === c.id);
-        const open = expanded === c.id;
-        const chapter = state.chapters.find((x) => x.id === c.chapterId);
-        const anchor = chapter
-          ? resolveAnchor(chapter.content, c)
-          : { status: "orphan", ranges: [] };
-        const linked = anchor.ranges.length > 0;
-        const alreadyVisible = linked && visibleAnchorIds.includes(c.id);
-        return (
-          <article
-            key={c.id}
-            id={"comment-" + c.id}
-            className={"comment-item " + (open ? "expanded" : "")}
-          >
-            <div className="comment-heading">
-              <button
-                className="comment-summary"
-                onClick={() => setExpanded(open ? "" : c.id)}
-                aria-expanded={open}
-                aria-label={
-                  (open
-                    ? "Recolher detalhes do comentário"
-                    : "Abrir detalhes do comentário") +
-                  " de " +
-                  (c.author || "Laura")
-                }
-              >
-                <span className="comment-avatar">
-                  {(c.author || "Laura").slice(0, 1)}
-                </span>
-                <div>
-                  <small>
-                    {state.chapters.find((x) => x.id === c.chapterId)?.title} ·{" "}
-                    {date(c.createdAt)}
-                  </small>
-
-                  <span className="subtle">
-                    {c.status === "resolved" ? "Concluído" : "Em aberto"}
-                  </span>
-                </div>
-              </button>
-              <button
-                className="comment-complete text-button"
-                onClick={() =>
-                  mutate(
-                    c.status === "resolved"
-                      ? "reopen_comment"
-                      : "resolve_comment",
-                    { commentId: c.id },
-                  )
-                }
-              >
-                {c.status === "resolved" ? (
-                  <RotateCcw size={14} />
-                ) : (
-                  <CheckCircle2 size={14} />
-                )}
-                {c.status === "resolved" ? "Reabrir" : "Concluir"}
-              </button>
-            </div>
-            <div className="comment-context">
-              {c.quote ? (
-                <CommentText text={c.quote} quote limit={220} />
-              ) : (
-                <p className="comment-chapter-scope">
-                  Sobre o capítulo inteiro
-                </p>
-              )}
-              <CommentText text={c.body} />
-              <div className="comment-context-actions">
-                <CopyCommentReference comment={c} />
+      <CommentFilters
+        counts={result}
+        chapters={state.chapters}
+        chapterId={chapterFilter}
+        author={author}
+        period={period}
+        sort={sort}
+        search={search}
+        compact={Boolean(chapterId)}
+        setChapter={setChapterFilter}
+        setAuthor={setAuthor}
+        setPeriod={setPeriod}
+        setSort={setSort}
+        setSearch={setSearch}
+      />
+      <TabsContent value={filter} className="comments-list">
+        {!comments.length && (
+          <Empty
+            title={
+              state.comments.length
+                ? "Nenhum comentário nesta seleção"
+                : "Um espaço para revisar seu trabalho"
+            }
+            description={
+              state.comments.length
+                ? "Experimente outro estado ou ajuste os filtros."
+                : "Selecione um trecho no documento para comentar. Você também pode pedir ao ChatGPT para registrar uma orientação sua ou avaliar o texto e deixar comentários."
+            }
+          />
+        )}
+        {comments.map((c) => {
+          const proposals = state.proposals.filter((p) => p.commentId === c.id);
+          const open = expanded === c.id;
+          const chapter = state.chapters.find((x) => x.id === c.chapterId);
+          const anchor = chapter
+            ? resolveAnchor(chapter.content, c)
+            : { status: "orphan", ranges: [] };
+          const linked = anchor.ranges.length > 0;
+          const alreadyVisible = linked && visibleAnchorIds.includes(c.id);
+          return (
+            <article
+              key={c.id}
+              id={"comment-" + c.id}
+              className={"comment-item " + (open ? "expanded" : "")}
+            >
+              <div className="comment-heading">
                 <button
-                  className="text-button"
-                  disabled={alreadyVisible}
-                  title={
-                    alreadyVisible
-                      ? "Trecho já visível no documento"
-                      : undefined
+                  className="comment-summary"
+                  onClick={() => setExpanded(open ? "" : c.id)}
+                  aria-expanded={open}
+                  aria-label={
+                    (open
+                      ? "Recolher detalhes do comentário"
+                      : "Abrir detalhes do comentário") +
+                    " de " +
+                    (c.author || "Laura")
                   }
-                  onClick={() => onNavigate(c.chapterId, c.id)}
                 >
-                  {linked ? "Ir ao trecho" : "Abrir capítulo"}{" "}
-                  <ArrowUpRight size={14} />
+                  <span className="comment-avatar">
+                    {(c.author || "Laura").slice(0, 1)}
+                  </span>
+                  <div>
+                    <small className="comment-author">
+                      {c.author || "Laura"}
+                      {c.origin === "mcp" && c.author === "Laura" && (
+                        <span> · via ChatGPT</span>
+                      )}
+                    </small>
+                    <small>
+                      {state.chapters.find((x) => x.id === c.chapterId)?.title}{" "}
+                      · {date(c.createdAt)}
+                    </small>
+
+                    <span
+                      className="subtle comment-state-label"
+                      data-status={c.status}
+                    >
+                      <span
+                        className="comment-state-dot"
+                        data-status={c.status}
+                      />
+                      {c.status === "resolved" ? "Concluído" : "Em aberto"}
+                    </span>
+                  </div>
                 </button>
-                {!open && (
+                <button
+                  className="comment-complete text-button"
+                  onClick={() =>
+                    mutate(
+                      c.status === "resolved"
+                        ? "reopen_comment"
+                        : "resolve_comment",
+                      { commentId: c.id },
+                    )
+                  }
+                >
+                  {c.status === "resolved" ? (
+                    <RotateCcw size={14} />
+                  ) : (
+                    <CheckCircle2 size={14} />
+                  )}
+                  {c.status === "resolved" ? "Reabrir" : "Concluir"}
+                </button>
+              </div>
+              <div className="comment-context">
+                {c.quote ? (
+                  <CommentText text={c.quote} quote limit={220} />
+                ) : (
+                  <p className="comment-chapter-scope">
+                    Sobre o capítulo inteiro
+                  </p>
+                )}
+                <CommentText text={c.body} />
+                <div className="comment-context-actions">
+                  <CopyCommentReference comment={c} />
                   <button
                     className="text-button"
-                    onClick={() => setExpanded(c.id)}
+                    disabled={alreadyVisible}
+                    title={
+                      alreadyVisible
+                        ? "Trecho já visível no documento"
+                        : undefined
+                    }
+                    onClick={() => onNavigate(c.chapterId, c.id)}
                   >
-                    {c.replies.length
-                      ? `Ver respostas (${c.replies.length})`
-                      : "Responder"}
+                    {linked ? "Ir ao trecho" : "Abrir capítulo"}{" "}
+                    <ArrowUpRight size={14} />
                   </button>
-                )}
-              </div>
-              {anchor.status === "orphan" && (
-                <p className="anchor-state">
-                  {proposals.some((p) => p.status === "applied")
-                    ? "O texto foi revisado. O trecho original está preservado acima; veja a alteração em Antes e depois."
-                    : "O trecho mudou ou não foi localizado com segurança. A seleção original foi mantida acima."}
-                </p>
-              )}
-            </div>
-            {proposals.length > 0 && (
-              <div className="comment-changes">
-                {proposals.map((p) => (
-                  <details key={p.id} className="comment-change">
-                    <summary>
-                      Antes e depois{" "}
-                      <span>
-                        {
-                          {
-                            pending: "Proposta",
-                            approved: "Aprovada",
-                            applied: "Aplicada",
-                            rejected: "Rejeitada",
-                            reverted: "Revertida",
-                          }[p.status]
-                        }
-                      </span>
-                    </summary>
-                    <ProposalDetail
-                      p={p}
-                      mutate={mutate}
-                      onCompare={onCompare}
-                      compact
-                    />
-                  </details>
-                ))}
-              </div>
-            )}
-            {open && (
-              <div className="comment-detail">
-                {anchor.status !== "orphan" && (
-                  <p className="anchor-state">{anchorStatus(c, state)}</p>
-                )}
-                {c.replies.map((r, i) => (
-                  <div className="reply" key={i}>
-                    <small>
-                      {r.origin === "mcp" ? "ChatGPT" : "Laura"} · {date(r.at)}
-                    </small>
-                    <CommentText text={r.body} limit={600} />
-                  </div>
-                ))}
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const form = e.currentTarget;
-                    await mutate("reply_to_comment", {
-                      commentId: c.id,
-                      body: new FormData(form).get("reply"),
-                    });
-                    form.reset();
-                  }}
-                >
-                  <textarea
-                    aria-label="Resposta ao comentário"
-                    name="reply"
-                    placeholder="Adicionar uma resposta…"
-                    required
-                  />
-                  <div className="actions">
-                    <button type="submit">Responder</button>
-                  </div>
-                </form>
-                {c.status === "resolved" &&
-                  !proposals.some((p) => p.status === "applied") && (
-                    <p className="notice">
-                      Concluído sem alteração textual associada.
-                    </p>
+                  {!open && (
+                    <button
+                      className="text-button"
+                      onClick={() => setExpanded(c.id)}
+                    >
+                      {c.replies.length
+                        ? `Ver respostas (${c.replies.length})`
+                        : "Responder"}
+                    </button>
                   )}
+                </div>
+                {anchor.status === "orphan" && (
+                  <p className="anchor-state">
+                    {proposals.some((p) => p.status === "applied")
+                      ? "O texto foi revisado. O trecho original está preservado acima; veja a alteração em Antes e depois."
+                      : "O trecho mudou ou não foi localizado com segurança. A seleção original foi mantida acima."}
+                  </p>
+                )}
               </div>
-            )}
-          </article>
-        );
-      })}
-    </section>
+              {proposals.length > 0 && (
+                <div className="comment-changes">
+                  {proposals.map((p) => (
+                    <details key={p.id} className="comment-change">
+                      <summary>
+                        Antes e depois{" "}
+                        <span>
+                          {
+                            {
+                              pending: "Proposta",
+                              approved: "Aprovada",
+                              applied: "Aplicada",
+                              rejected: "Rejeitada",
+                              reverted: "Revertida",
+                            }[p.status]
+                          }
+                        </span>
+                      </summary>
+                      <ProposalDetail
+                        p={p}
+                        mutate={mutate}
+                        onCompare={onCompare}
+                        compact
+                      />
+                    </details>
+                  ))}
+                </div>
+              )}
+              {open && (
+                <div className="comment-detail">
+                  {anchor.status !== "orphan" && (
+                    <p className="anchor-state">{anchorStatus(c, state)}</p>
+                  )}
+                  {c.replies.map((r, i) => (
+                    <div className="reply" key={i}>
+                      <small>
+                        {r.author || (r.origin === "mcp" ? "ChatGPT" : "Laura")}
+                        {r.origin === "mcp" && r.author === "Laura"
+                          ? " · via ChatGPT"
+                          : ""}{" "}
+                        · {date(r.at)}
+                      </small>
+                      <CommentText text={r.body} limit={600} />
+                    </div>
+                  ))}
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      await mutate("reply_to_comment", {
+                        commentId: c.id,
+                        body: new FormData(form).get("reply"),
+                      });
+                      form.reset();
+                    }}
+                  >
+                    <textarea
+                      aria-label="Resposta ao comentário"
+                      name="reply"
+                      placeholder="Adicionar uma resposta…"
+                      required
+                    />
+                    <div className="actions">
+                      <button type="submit">Responder</button>
+                    </div>
+                  </form>
+                  {c.status === "resolved" &&
+                    !proposals.some((p) => p.status === "applied") && (
+                      <p className="notice">
+                        Concluído sem alteração textual associada.
+                      </p>
+                    )}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </TabsContent>
+    </Tabs>
   );
 }

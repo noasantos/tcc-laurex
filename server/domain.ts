@@ -98,6 +98,7 @@ export const schemas = {
     expectedRevision: rev,
     chapterId: id,
     body: text.min(1),
+    author: z.enum(["Laura", "ChatGPT"]).optional(),
     quote: text.optional(),
     anchor: z
       .object({
@@ -115,6 +116,7 @@ export const schemas = {
     expectedRevision: rev,
     commentId: id,
     body: text.min(1),
+    author: z.enum(["Laura", "ChatGPT"]).optional(),
   }),
   resolve_comment: z.object({ expectedRevision: rev, commentId: id }),
   reopen_comment: z.object({ expectedRevision: rev, commentId: id }),
@@ -423,7 +425,8 @@ export class Domain {
               quote: a.quote || "",
               anchor: a.anchor || { scope: "chapter" },
               status: "open",
-              author: origin === "mcp" ? "ChatGPT" : "Laura",
+              author: a.author ?? (origin === "mcp" ? "ChatGPT" : "Laura"),
+              origin,
               reviewState: "open",
               history: [
                 { at: now, action: "created", origin, version: s.revision + 1 },
@@ -444,7 +447,7 @@ export class Domain {
             break;
           }
           case "reply_to_comment":
-            comment(s).replies.push({ body: a.body, at: now, origin });
+            comment(s).replies.push({ body: a.body, at: now, origin, author: a.author ?? (origin === "mcp" ? "ChatGPT" : "Laura") });
             result = comment(s);
             break;
           case "resolve_comment":

@@ -101,6 +101,15 @@ try {
       anchor: { blockId: read.content.content[0].attrs.id, scope: "selection" },
     })
   ).result;
+  assert.equal(comment.author, "ChatGPT");
+  assert.equal(comment.origin, "mcp");
+  const dictated = (await call("create_comment", {expectedRevision: revision(), chapterId: chapter.id, body: "Orientação ditada por Laura", author: "Laura"})).result;
+  assert.equal(dictated.author, "Laura");
+  assert.equal(dictated.origin, "mcp");
+  await call("reply_to_comment", {expectedRevision: revision(), commentId: dictated.id, body: "Resposta de Laura", author: "Laura"});
+  const dictatedContext = await call("get_comment_context", {commentId: dictated.id});
+  assert.equal(dictatedContext.replies[0].author, "Laura");
+  assert.equal(dictatedContext.replies[0].origin, "mcp");
   assert.equal(chapter.status, "Em desenvolvimento");
   await assert.rejects(() => call("update_chapter_metadata", {
     expectedRevision: revision(), chapterId: chapter.id, chapterRevision: chapter.revision,
