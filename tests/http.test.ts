@@ -43,6 +43,9 @@ test("HTTP real: origem, sessão local, autenticação MCP e escrita pelo protoc
       await new Promise((r) => setTimeout(r, 100));
     }
     assert.ok(ready, logs);
+    assert.equal((await fetch(url + "/api/location/pick", {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: "{}",
+    })).status, 403, "Native dialogs require the authenticated local UI session");
     assert.equal(
       (
         await fetch(url + "/api/state", {

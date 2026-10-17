@@ -1,3 +1,4 @@
+import { DirectoryPicker } from "./directory-picker";
 import { AutomaticBackups, backupPolicy } from "./automatic-backups";
 import Fastify from "fastify";
 import staticFiles from "@fastify/static";
@@ -297,6 +298,16 @@ app.post("/api/import/archive", async (req) => {
   );
   return { ...result, warnings: imported.warnings };
 });
+const directoryPicker = new DirectoryPicker();
+app.post("/api/location/pick/cancel", async (req) => {
+  z.object({}).strict().parse(req.body);
+  directoryPicker.cancel();
+  return {cancelled: true};
+});
+app.post("/api/location/pick", async (req) => {
+  z.object({}).strict().parse(req.body);
+  return { directory: await directoryPicker.pick() };
+});
 app.post("/api/location", async (req) => {
   const a = z
     .object({
@@ -522,6 +533,7 @@ console.log(
 );
 const shutdown = async () => {
   clearInterval(backupTimer);
+  directoryPicker.cancel();
   databaseWatcher.close();
   for (const response of listeners) response.end();
   await app.close();

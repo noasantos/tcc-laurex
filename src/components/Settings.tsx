@@ -1,7 +1,7 @@
 import { LoaderCircle, CircleAlert } from "lucide-react";
 import "./data-location.css";
 import { Button } from "./ui/button";
-import { FolderInput, ChevronDown } from "lucide-react";
+import { FolderInput, Folder, ChevronDown } from "lucide-react";
 import repairPrompt from "../../docs/MCP_REPAIR_PROMPT.txt?raw";
 import { Copy, Check } from "lucide-react";
 import { ImportDropzone, type ImportResult } from "./ImportDropzone";
@@ -55,6 +55,9 @@ export function Settings({
     [sources, setSources] = useState<any[]>([]),
     [pendingBackup, setPendingBackup] = useState<any>(null),
     [directory, setDirectory] = useState("");
+  const [pickingDirectory, setPickingDirectory] = useState(false);
+  const [manualDirectory, setManualDirectory] = useState(false);
+  const [directoryError, setDirectoryError] = useState("");
   useEffect(() => {
     request("sources")
       .then(setSources)
@@ -259,37 +262,128 @@ export function Settings({
           </summary>
           <div className="data-location-content">
             <p>Use uma pasta nova ou vazia, fora da aplicação.</p>
-            <Field label="Nova pasta dos dados">
-              <input
-                placeholder="Cole o caminho completo da pasta"
-                value={directory}
-                autoComplete="off"
-                spellCheck={false}
-                onChange={(e) => setDirectory(e.target.value)}
-              />
-            </Field>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={!directory.trim() || busy}
-              onClick={() =>
-                doWork(async () => {
-                  const r = await request("location", {
-                    expectedRevision: state.revision,
-                    directory,
-                    confirmed: true,
-                  });
-                  setMessage(
-                    r.restartRequired
-                      ? "Pasta alterada com segurança. Encerre e abra novamente o Laura Workspace para continuar. Os dados antigos foram preservados."
-                      : "A pasta selecionada já está em uso.",
-                  );
-                })
-              }
-            >
-              <FolderInput size={14} aria-hidden="true" />
-              Copiar projeto para esta pasta
-            </Button>
+            <div className="directory-picker-row">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={busy || pickingDirectory}
+                onClick={async () => {
+                  setDirectoryError("");
+                  setPickingDirectory(true);
+                  try {
+                    const result = await request<{ directory: string | null }>(
+                      "location/pick",
+                      {},
+                    );
+                    if (result.directory) {
+                      setDirectory(result.directory);
+                      setManualDirectory(false);
+                    }
+                  } catch (error) {
+                    setDirectoryError((error as Error).message);
+                    setManualDirectory(true);
+                  } finally {
+                    setPickingDirectory(false);
+                  }
+                }}
+              >
+                {pickingDirectory ? (
+                  <LoaderCircle
+                    size={14}
+                    className="integrity-spinner"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <FolderInput size={14} aria-hidden="true" />
+                )}
+                {pickingDirectory
+                  ? "Escolhendo pasta…"
+                  : directory
+                    ? "Escolher outra pasta"
+                    : "Escolher pasta…"}
+              </Button>
+              {pickingDirectory ? (
+                <button
+                  type="button"
+                  className="text-button directory-manual-toggle"
+                  onClick={() =>
+                    void request("location/pick/cancel", {}).catch(() =>
+                      setDirectoryError(
+                        "Feche a janela de seleção para continuar.",
+                      ),
+                    )
+                  }
+                >
+                  Cancelar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="text-button directory-manual-toggle"
+                  aria-expanded={manualDirectory}
+                  onClick={() => setManualDirectory(!manualDirectory)}
+                >
+                  {manualDirectory
+                    ? "Ocultar campo de caminho"
+                    : "Informar caminho manualmente"}
+                </button>
+              )}
+            </div>
+            {directoryError && (
+              <p role="alert" className="directory-picker-error">
+                {directoryError}
+              </p>
+            )}
+            {manualDirectory ? (
+              <Field label="Nova pasta dos dados">
+                <input
+                  placeholder="Cole o caminho completo da pasta"
+                  value={directory}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onChange={(e) => setDirectory(e.target.value)}
+                />
+              </Field>
+            ) : (
+              directory && (
+                <div className="directory-selection" role="status">
+                  <Folder size={18} aria-hidden="true" />
+                  <div>
+                    <strong>
+                      {directory
+                        .replace(/[\\/]+$/, "")
+                        .split(/[\\/]/)
+                        .pop() || directory}
+                    </strong>
+                    <span>{directory}</span>
+                  </div>
+                </div>
+              )
+            )}
+            {directory.trim() && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!directory.trim() || busy || pickingDirectory}
+                onClick={() =>
+                  doWork(async () => {
+                    const r = await request("location", {
+                      expectedRevision: state.revision,
+                      directory,
+                      confirmed: true,
+                    });
+                    setMessage(
+                      r.restartRequired
+                        ? "Pasta alterada com segurança. Encerre e abra novamente o Laura Workspace para continuar. Os dados antigos foram preservados."
+                        : "A pasta selecionada já está em uso.",
+                    );
+                  })
+                }
+              >
+                <FolderInput size={14} aria-hidden="true" />
+                Copiar projeto para esta pasta
+              </Button>
+            )}
             <p className="data-location-hint">
               Os dados atuais serão preservados e a cópia será verificada.
               Depois, reinicie o app para usar a nova pasta.

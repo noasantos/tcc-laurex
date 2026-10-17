@@ -53,6 +53,8 @@ Os originais podem ser baixados novamente em Configurações. O arquivo de orige
 
 ## Dados, backup e atualização
 
+Em Configurações → Avançado → Alterar pasta dos dados, use **Escolher pasta…** para abrir o seletor nativo do macOS ou Windows. No Linux, o seletor usa Zenity ou KDialog quando disponíveis. Cancelar preserva a seleção anterior; selecionar uma pasta não copia nem muda os dados até a ação separada **Copiar projeto para esta pasta**. A opção de informar um caminho manual continua disponível como alternativa.
+
 Os dados ficam **fora da pasta da aplicação**:
 
 | Sistema | Pasta inicial                                  |
