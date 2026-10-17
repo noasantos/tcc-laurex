@@ -1,0 +1,20 @@
+/* The generated wordmark keeps its original letterforms at every UI size. */
+.brand .laurex-wordmark {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.laurex-wordmark img {
+  display: block;
+  width: 146px;
+  height: auto;
+}
+[data-theme="dark"] .laurex-wordmark img {
+  filter: invert(1);
+}
+@media (max-width: 600px) {
+  .laurex-wordmark img {
+    width: 124px;
+  }
+}

@@ -1,3 +1,4 @@
+import { GuidedTour, useOnboarding } from "./components/Onboarding";
 import { readWorkspaceResume, resolveWorkspaceResume } from "./workspace-resume";
 import { useWorkspaceResume } from "./useWorkspaceResume";
 import { ChapterNavigation } from "./components/ChapterNavigation";
@@ -5,6 +6,7 @@ import { ChapterStatus } from "./components/ChapterStatus";
 import { ChapterCreate } from "./components/ChapterCreate";
 import { NavigationWorkspace } from "./components/NavigationWorkspace";
 import { HeaderSearch } from "./components/HeaderSearch";
+import "./components/brand.css";
 import { Select, SelectOption } from "./components/Select";
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import {
@@ -53,6 +55,12 @@ import {
 import { VersionHistory } from "./components/History";
 import { Settings, Welcome } from "./components/Settings";
 export default function App() {
+  const onboarding = useOnboarding();
+  const [tourActive, setTourActive] = useState(false);
+  const [tourNavigation, setTourNavigation] = useState(false);
+  const [tourReplay, setTourReplay] = useState(0);
+  const [setupBusy, setSetupBusy] = useState(false);
+  const [setupImportBusy, setSetupImportBusy] = useState(false);
   const [resume] = useState(readWorkspaceResume);
   const resumed = useRef(false);
   const [state, setState] = useState<State | null>(null),
@@ -86,7 +94,7 @@ export default function App() {
       kind: string;
       fn: (v: any) => void;
     } | null>(null),
-    [welcome, setWelcome] = useState(!localStorage.getItem("laura-welcome")),
+    [welcome, setWelcome] = useState(false),
     [dirty, setDirty] = useState(false),
     [recovery, setRecovery] = useState<any>(null);
   const [resolvedTheme, setResolvedTheme] = useState(() =>
@@ -96,6 +104,7 @@ export default function App() {
         : "light"
       : theme,
   );
+  useEffect(() => { setWelcome(onboarding.value?.setup === "pending"); }, [onboarding.value?.setup]);
   const stateRef = useRef<State | null>(null);
   const queue = useRef(Promise.resolve());
   const editorSave = useRef<{ flush: () => Promise<void>; release: () => void } | null>(null);
@@ -278,11 +287,11 @@ export default function App() {
   const comparison = state.proposals.find(p => p.id === comparisonId && p.chapterId === chapterId);
   const panelChapter = state.chapters.find((c) => c.id === panelChapterId);
   const closeWelcome = () => {
-    localStorage.setItem("laura-welcome", "1");
-    setWelcome(false);
+    void onboarding.update("setup").then(() => setWelcome(false)).catch(e => setError(e.message));
   };
   const nav = (label: string, p: string, Icon: any, count?: number) => (
     <button
+      data-tour={p === "overview" ? "reviews" : p === "notes" ? "ideas" : p === "comments" ? "comments" : undefined}
       className={"nav-item " + (page === p ? "selected" : "")}
       onClick={() => goPage(p)}
     >
@@ -302,9 +311,11 @@ export default function App() {
     >
       <header className="app-header">
         <div className="brand">
-          <span>Laura Workspace</span>
+          <span className="laurex-wordmark">
+            <img src="/brand/laurex-wordmark.png" alt="LAUREX" width={146} height={28} />
+          </span>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" data-tour="header">
           <button
             className="theme-toggle"
             aria-label={
@@ -354,7 +365,7 @@ export default function App() {
           </button>
         </div>
       </header>
-      <NavigationWorkspace navigation={<>
+      <NavigationWorkspace tourActive={tourActive} tourOpen={tourNavigation} navigation={<>
           <nav>
             {nav("Visão geral", "overview", LayoutDashboard)}
             {nav("Caderno de ideias", "notes", NotebookPen)}
@@ -426,7 +437,7 @@ export default function App() {
                   "document-layout " + (commentPanel ? "with-comments" : "")
                 }
               >
-                <section className="document">
+                <section className="document" data-tour="editor">
                   {comparison ? (
                     <DocumentComparison p={comparison} title={chapter.title} mutate={mutateReview} onClose={() => setComparisonId("")} />
                   ) : <>
@@ -578,7 +589,7 @@ export default function App() {
                 </CommentSidebar>
               </div>
             ) : (
-              <Empty
+              <div data-tour="empty"><Empty
                 title="Seu trabalho começa aqui"
                 description="Crie a estrutura ou importe seu projeto LaTeX. O texto pode chegar depois, com o ChatGPT."
               >
@@ -588,7 +599,7 @@ export default function App() {
                 <button onClick={() => goPage("settings")}>
                   Importar projeto
                 </button>
-              </Empty>
+              </Empty></div>
             ))}
           {page === "overview" && (
             <Overview
@@ -655,7 +666,10 @@ export default function App() {
                   Voltar ao documento
                 </button>
               </div>
+              <button onClick={() => setTourReplay(n => n + 1)} disabled={dirty || !onboarding.value || Boolean(onboarding.failure)}>Fazer tour novamente</button>
               <Settings
+                onSetupImportDone={onboarding.value?.setup === "import" ? () => {void onboarding.update("setup").catch(e => setError(e.message));} : undefined}
+                onImportBusy={setSetupImportBusy}
                 state={state}
                 mutate={mutate}
                 refresh={refresh}
@@ -691,14 +705,16 @@ export default function App() {
           )}
         </main>
       </NavigationWorkspace>
+      {onboarding.value?.setup === "import" && page !== "settings" && <div className="tour-invitation"><p>Conclua a importação ou continue com um projeto vazio.</p><button onClick={() => {setSettingsTab("files");goPage("settings");}}>Voltar à importação</button><button onClick={closeWelcome}>Cancelar importação</button></div>}
+      <GuidedTour activity={setTourActive} onboarding={onboarding} hintsEligible={Boolean(onboarding.value?.setup === "ready" && !welcome && (!modal || modal === "plan") && !recovery && !error && !commentOpen && !insert && !reference && !footnote && !setupImportBusy)} eligible={Boolean(onboarding.value?.setup === "ready" && !welcome && !modal && !recovery && !error && !dirty && !commentOpen && !commentDraft && !insert && !reference && !footnote && !setupImportBusy && !setupBusy && page !== "new-chapter")} hasChapter={Boolean(chapter)} page={page} setPage={goPage} navigation={setTourNavigation} replay={tourReplay} replayHandled={() => setTourReplay(0)} />
       {welcome && (
-        <Modal title="Bem-vinda, Laura" onClose={closeWelcome}>
+        <Modal title="Bem-vinda, Laura" onClose={() => {if (!setupBusy) closeWelcome();}}>
           <Welcome
+            onBusy={setSetupBusy}
             state={state}
             mutate={mutate}
             onImport={() => {
-              closeWelcome();
-              goPage("settings");
+              void onboarding.update("import").then(() => {setWelcome(false);setSettingsTab("files");goPage("settings");}).catch(e => setError(e.message));
             }}
             onClose={closeWelcome}
           />
@@ -784,6 +800,7 @@ export default function App() {
             }}
           >
             <textarea
+              data-hint="planning"
               aria-label="Planejamento do capítulo"
               name="plan"
               rows={10}

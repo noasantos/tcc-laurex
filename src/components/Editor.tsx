@@ -794,6 +794,7 @@ export function DocumentEditor({
           state.doc.textBetween(state.selection.from, state.selection.to).trim()
             .length > 0
         }
+        data-hint="selection"
         className="selection-toolbar"
         role="toolbar"
         aria-label="Ferramentas do trecho selecionado"
@@ -831,6 +832,7 @@ export function DocumentEditor({
         <span>Documento / {chapter.number}. {chapter.title}</span>
         <div className="document-meta-actions">
           <div
+            data-hint="modes"
             className="document-view-switch"
             role="group"
             aria-label="Visualização do documento"

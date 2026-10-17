@@ -1,3 +1,4 @@
+import { OnboardingStore } from "./onboarding";
 import { DirectoryPicker } from "./directory-picker";
 import { AutomaticBackups, backupPolicy } from "./automatic-backups";
 import Fastify from "fastify";
@@ -122,6 +123,9 @@ app.get("/api/events", async (_req, reply) => {
   reply.raw.on("close", () => listeners.delete(reply.raw));
 });
 app.get("/api/session", async () => ({ token }));
+const onboarding = new OnboardingStore(store);
+app.get("/api/onboarding", async (_req, reply) => reply.header("Cache-Control", "no-store").send(onboarding.get()));
+app.post("/api/onboarding", async req => onboarding.update(req.body));
 app.get("/api/state", async () => store.get());
 app.get("/api/health", async () => ({
   ok: true,

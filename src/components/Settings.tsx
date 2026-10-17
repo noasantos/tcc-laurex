@@ -21,7 +21,11 @@ export function Settings({
   theme,
   initialTab = "general",
   onTabChange,
+  onSetupImportDone,
+  onImportBusy,
 }: {
+  onSetupImportDone?: () => void;
+  onImportBusy?: (busy:boolean) => void;
   state: State;
   mutate: Mutate;
   refresh: () => Promise<void>;
@@ -77,6 +81,7 @@ export function Settings({
       setBusy(false);
     }
   }
+  useEffect(() => {onImportBusy?.(busy); return () => onImportBusy?.(false);}, [busy]);
   async function importAcademicFile(file: File): Promise<ImportResult> {
     setBusy(true);
     setMessage("");
@@ -127,6 +132,7 @@ export function Settings({
       }
       await refresh();
       setSources(await request("sources"));
+      onSetupImportDone?.();
       return result;
     } finally {
       setBusy(false);
@@ -174,6 +180,7 @@ export function Settings({
       </div>
       <div className="settings-section" hidden={tab !== "files"}>
         <h3>Arquivos acadêmicos</h3>
+        {onSetupImportDone && <button disabled={busy} onClick={onSetupImportDone}>Cancelar importação e continuar</button>}
         <p className="subtle">
           Os originais são copiados para um arquivo protegido. Importar nunca
           sobrescreve o arquivo de origem.
@@ -201,6 +208,7 @@ export function Settings({
                       });
                       await refresh();
                       setSources(await request("sources"));
+                      onSetupImportDone?.();
                       setArchive(null);
                       setImportReset((n) => n + 1);
                       setMessage(
@@ -632,11 +640,13 @@ export function Settings({
   );
 }
 export function Welcome({
+  onBusy,
   state,
   mutate,
   onImport,
   onClose,
 }: {
+  onBusy?: (busy:boolean) => void;
   state: State;
   mutate: Mutate;
   onImport: () => void;
@@ -644,6 +654,7 @@ export function Welcome({
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  useEffect(() => {onBusy?.(busy); return () => onBusy?.(false);}, [busy]);
   return (
     <div className="welcome">
       <BookIcon />
@@ -655,16 +666,17 @@ export function Welcome({
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          if (state.chapters.length) {onClose();return;}
           const name = String(new FormData(e.currentTarget).get("name"));
           setBusy(true);
           try {
             await mutate("update_settings", { name });
             for (const title of [
-              "1. Introdução",
-              "2. Referencial teórico",
-              "3. Metodologia",
-              "4. Resultados",
-              "5. Considerações finais",
+              "Introdução",
+              "Referencial teórico",
+              "Metodologia",
+              "Resultados",
+              "Considerações finais",
             ])
               await mutate("create_chapter", { title });
             onClose();
@@ -682,15 +694,15 @@ export function Welcome({
           {busy ? "Preparando…" : "Começar com uma estrutura de capítulos"}
         </button>
       </form>
-      <button className="text-button" onClick={onImport}>
+      <button className="text-button" disabled={busy} onClick={onImport}>
         Importar meu LaTeX primeiro
       </button>
-      <button className="text-button" onClick={onClose}>
+      <button className="text-button" disabled={busy} onClick={onClose}>
         Começar com um projeto vazio
       </button>
       {error && <p role="alert">{error}</p>}
       <small>
-        Backups automáticos ativos · conexão MCP inicialmente desligada
+        Backups automáticos ativos · {state.settings.mcpEnabled ? "acesso MCP local autorizado" : "acesso MCP local desligado"}
       </small>
     </div>
   );

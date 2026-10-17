@@ -12,13 +12,13 @@ export function CopyCommentReference({ comment }: { comment: Comment }) {
     [],
   );
   return (
-    <div className="comment-copy">
+    <div className="comment-copy" data-hint="reference">
       <button
         type="button"
         className="text-button comment-copy-button"
         data-copy-state={state}
         title="Copiar pedido para a conversa do TCC"
-        aria-label={state === "copied" ? "Copiado" : "Copiar para o ChatGPT"}
+        aria-label={state === "copied" ? "Copiado" : "Copiar referência"}
         onClick={async () => {
           if (reset.current) clearTimeout(reset.current);
           try {
@@ -35,7 +35,7 @@ export function CopyCommentReference({ comment }: { comment: Comment }) {
           <Check size={13} className="comment-copy-success" />
         </span>
         <span className="comment-copy-swap" aria-hidden="true">
-          <span className="comment-copy-ready">Copiar para o ChatGPT</span>
+          <span className="comment-copy-ready">Copiar referência</span>
           <span className="comment-copy-success">Copiado</span>
         </span>
       </button>

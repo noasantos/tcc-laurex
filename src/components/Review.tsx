@@ -34,7 +34,7 @@ export function ProposalDetail({
   compact?: boolean;
 }) {
   return (
-    <div className="proposal">
+    <div className="proposal" data-hint="proposal">
       <div className="row-between">
         <strong>{p.reason}</strong>
         <span className={"status " + p.status}>

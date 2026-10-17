@@ -13,7 +13,11 @@ import "./navigation.css";
 export function NavigationWorkspace({
   navigation,
   children,
+  tourOpen = false,
+  tourActive = false,
 }: {
+  tourOpen?: boolean;
+  tourActive?: boolean;
   navigation: ReactNode;
   children: ReactNode;
 }) {
@@ -23,20 +27,23 @@ export function NavigationWorkspace({
   });
   const [peeking, setPeeking] = useState(false);
   const changePinned = (value: boolean) => {
+    if (tourActive) return;
     setPinned(value);
     setPeeking(false);
     localStorage.setItem("laura-navigation-pinned", String(value));
   };
   return (
     <SidebarProvider
-      open={pinned || peeking}
+      open={pinned || peeking || tourOpen}
       onOpenChange={changePinned}
       className="workspace navigation-workspace min-h-0"
+      data-tour-open={tourOpen}
       data-pinned={pinned}
       data-peeking={peeking}
       style={{ "--sidebar-width": "234px" } as CSSProperties}
     >
       <NavigationPanel
+        tourOpen={tourOpen}
         pinned={pinned}
         peeking={peeking}
         setPeeking={setPeeking}
@@ -50,12 +57,14 @@ export function NavigationWorkspace({
 }
 
 function NavigationPanel({
+  tourOpen,
   pinned,
   peeking,
   setPeeking,
   setPinned,
   children,
 }: {
+  tourOpen: boolean;
   pinned: boolean;
   peeking: boolean;
   setPeeking: (value: boolean) => void;
@@ -67,7 +76,7 @@ function NavigationPanel({
   const edge = useRef<HTMLButtonElement>(null);
   const enter = useRef<ReturnType<typeof setTimeout> | null>(null);
   const leave = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const visible = isMobile ? openMobile : pinned || peeking;
+  const visible = tourOpen || (isMobile ? openMobile : pinned || peeking);
   const clearTimers = () => {
     if (enter.current) clearTimeout(enter.current);
     if (leave.current) clearTimeout(leave.current);
@@ -101,7 +110,7 @@ function NavigationPanel({
     };
     const escape = (event: KeyboardEvent) => {
       if (
-        event.key === "Escape" &&
+        !tourOpen && event.key === "Escape" &&
         visible &&
         !event.defaultPrevented &&
         !body.current?.querySelector('[data-chapter-dragging="true"]')
@@ -114,7 +123,7 @@ function NavigationPanel({
       document.removeEventListener("pointerdown", outside);
       document.removeEventListener("keydown", escape);
     };
-  }, [peeking, visible, isMobile]);
+  }, [peeking, visible, isMobile, tourOpen]);
   useEffect(() => () => clearTimers(), []);
   useEffect(() => {
     if (isMobile) setPeeking(false);
@@ -148,8 +157,9 @@ function NavigationPanel({
           <PanelLeft />
         </Button>
       </div>
-      <Sidebar className="navigation-panel" collapsible="offcanvas">
+      <Sidebar className="navigation-panel" collapsible={tourOpen && isMobile ? "none" : "offcanvas"}>
         <aside
+          data-tour="navigation"
           ref={body}
           className="sidebar navigation-body"
           id="workspace-sidebar"

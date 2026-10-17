@@ -14,15 +14,15 @@ const call = (name: any, args: any) =>
 call("update_settings", { name: "Meu TCC · demonstração" });
 let intro: any;
 for (const title of [
-  "1. Introdução",
-  "2. Referencial teórico",
-  "3. Metodologia",
-  "4. Resultados",
-  "5. Considerações finais",
+  "Introdução",
+  "Referencial teórico",
+  "Metodologia",
+  "Resultados",
+  "Considerações finais",
 ]) {
   const c = call("create_chapter", {
     title,
-    ...(title.startsWith("1.")
+    ...(title === "Introdução"
       ? {
           content: {
             type: "doc",
@@ -41,7 +41,7 @@ for (const title of [
         }
       : {}),
   }).result;
-  if (title.startsWith("1.")) intro = c;
+  if (title === "Introdução") intro = c;
 }
 call("create_comment", {
   chapterId: intro.id,
