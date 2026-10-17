@@ -4,19 +4,27 @@
 
 ## Supported visual LaTeX import
 
-Plain paragraphs, explicit section/subsection/subsubsection headings, textbf/emph/textit, basic cite/citep/citet and footnote. Semantic whitespace may be normalized in this subset. Structural paragraph and heading IDs are generated.
+Plain paragraphs, explicit section/subsection/subsubsection headings, textbf/emph/textit, basic cite/citep/citet and footnote. Native source projection additionally reads comments without displaying them as academic content, and renders supported inline/display math and equation/equation* through KaTeX with trust disabled and bounded expansion. Such sources are protected from visual rewriting so original comments, delimiters and environments remain intact. Semantic whitespace may be normalized in this subset. Structural paragraph and heading IDs are generated.
 
-If any unsupported node, macro, environment or nonempty optional argument occurs, the **entire imported source remains a protected raw block**. This conservative choice prevents partial conversion from silently losing a custom macro nested inside a supported command. Protected sources export byte-for-byte. The editor can surround a protected block with new visual content, but cannot pretend to provide safe bidirectional editing of arbitrary LaTeX.
+If any unsupported node, macro, environment or nonempty optional argument occurs, the **entire imported source remains a protected raw block**. This conservative choice prevents partial conversion from silently losing a custom macro nested inside a supported command. Protected sources export byte-for-byte. Native chapters containing these protected blocks require source proposals; visual replacement is blocked to prevent losing commands.
 
 A ZIP is preserved as a full original, but only the selected main `.tex` is inspected for the visual view. Includes, classes, style files, fonts, external images, bibliography processors and custom commands are not expanded or synchronized bidirectionally. Continue compiling the canonical original project in the already installed LaTeX tool.
 
 Word import is deliberately labeled text-only. It preserves the original archive but does not preserve its formatting in the visual representation. It is not a faithful DOCX-to-LaTeX converter.
 
-## Side-by-side source view
+## Native source and code view
 
-“Ver LaTeX” in the document header opens a read-only code pane beside the visual editor. Reading remains the default. The code follows the current visual content, including local edits and updates received from the assistant; planning, notes and comments are excluded. Protected raw LaTeX blocks retain their exact source. This is a chapter content projection, not a full canonical project/preamble browser or a bidirectional source editor.
+Each convertible chapter has a canonical `chapter.latex` string. It is native TeX, not HTML, Markdown or an editor JSON projection. Incoming LaTeX is stored verbatim in SQLite transactions, document versions and full backups. `content` remains a derived visual projection for selections/comments. The app atomically materializes `<data>/academic/chapters/<chapter-id>.tex` and local visual figure assets; these are recoverable read copies of the committed source, regenerated on startup. Edit through MCP/the application, not these generated copies. Original imports remain archived separately and are never replaced.
 
-Both panes scroll independently within the screen. Synchronization is enabled initially and maps matching top-level document blocks, interpolating within each block despite different rendered heights. The link button disables synchronization. On narrow screens the panes stack vertically. An unsupported conversion displays a message at its block without changing or hiding the academic source. The preview endpoint validates the document, requires the local session and never writes project data or compiles TeX.
+Existing visual chapters receive a backup and a versioned migration before their first native source is created. Their existing visual structure and block IDs remain unchanged. If a legacy construct cannot be safely exported, the visual chapter stays intact with an explicit conversion issue; the app never invents TeX or labels it native. Supported visual edits update the source transactionally; this supported subset may normalize TeX formatting. Chapters with unsupported original constructs are protected from visual edits, which could discard commands. Revision requires a native-source proposal instead.
+
+The document offers **Visual**, **Código LaTeX** and **Lado a lado**. The code view uses CodeMirror 6 with its official TeX mode, syntax highlighting, line numbers, wrapping, bracket matching, selection/copy, and light/dark colors. CodeMirror is loaded only when a code view is requested. The code pane shows the saved canonical source, not an unsaved visual draft. It is read-only; manual editing remains available in the supported visual editor, while native code revisions are proposed through MCP. This is a source view, not an Overleaf PDF renderer.
+
+`create_chapter` accepts `latex`. `get_chapter`/`get_chapter_latex` return the native source and chapter revision. `propose_latex_edit` (alias of `propose_edit`) accepts `afterLatex` plus `chapterRevision`, `expectedRevision`, a reason and optional comment ID. `after` JSON remains a compatibility path for supported visual documents; never send both formats. Full before/after native sources are retained and can be compared in the proposal. Laura must approve locally before `apply_approved_edit`. Metadata updates never regenerate an existing native source. Unchanged projected blocks retain their structural IDs; removed/unsupported selections remain traceable through the comment recovery mechanism.
+
+Both panes scroll inside the screen. Synchronization maps recognizable top-level blocks; if exact correspondence is unavailable, it uses proportional scrolling. It does not claim SyncTeX precision. Disable it with the link button. Narrow layouts stack the panes; source-only mode keeps a full-width code area.
+
+A source can contain arbitrary TeX without being executed. Incomplete syntax is preserved and identified as protected source. Complex source still has a conservative visual projection, not a full bidirectional TeX editor. Unsupported macros, tables, packages and full institutional projects remain intact but are not falsely rendered as a faithful visual document.
 
 ## Export
 

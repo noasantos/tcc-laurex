@@ -1,0 +1,12 @@
+.sortable-chapters {gap:2px;}
+.sortable-chapter {display:flex;position:relative;align-items:center;gap:0;min-width:0;border-radius:5px;background:var(--bg);touch-action:pan-y;}
+.sortable-chapter:hover,.sortable-chapter:focus-within,.sortable-chapter.selected {background:var(--selected);}
+.sortable-chapter .chapter-nav-item {background:transparent;border:0;box-shadow:none;min-width:0;flex:1;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-align:left;}
+.sortable-chapter .chapter-drag-handle {flex:none;display:flex;align-items:center;justify-content:center;width:20px;min-height:30px;border:0;padding:0;box-shadow:none;background:transparent;color:var(--muted);opacity:0;cursor:grab;touch-action:none;transition:opacity 140ms ease;}
+.sortable-chapter:hover .chapter-drag-handle,.sortable-chapter:focus-within .chapter-drag-handle {opacity:.7;}
+.sortable-chapter .chapter-drag-handle:hover,.sortable-chapter .chapter-drag-handle:focus-visible {opacity:1;}
+.sortable-chapter.is-dragging {z-index:2;box-shadow:0 4px 14px #00000018;background:var(--selected);}
+.sortable-chapter.is-dragging .chapter-drag-handle {cursor:grabbing;opacity:1;}
+.sortable-chapter .chapter-drag-handle:disabled {visibility:hidden;}
+@media(hover:none) {.sortable-chapter .chapter-drag-handle {opacity:.6;}}
+@media(prefers-reduced-motion:reduce) {.sortable-chapter,.sortable-chapter .chapter-drag-handle {transition:none!important;}}

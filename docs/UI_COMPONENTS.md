@@ -23,3 +23,11 @@ The navigation uses the official `@shadcn/sidebar` (New York/Radix, installed by
 The scoped layout uses a transform-only 260ms `cubic-bezier(.22,1,.36,1)` slide and the same timing for the pinned layout gap. No display toggle or unmount interrupts the desktop slide; hidden navigation is inert. Reduced motion removes the transitions. The only behavioral patch to the upstream provider preserves Cmd/Ctrl+B inside text inputs and contenteditable editors instead of intercepting bold formatting. Mobile uses the official sidebar Sheet behavior. The pin preference is local; hover does not persist as a preference.
 
 References: [official Sidebar](https://ui.shadcn.com/docs/components/radix/sidebar), [Notion sidebar controls](https://www.notion.com/help/navigate-with-the-sidebar).
+
+## Chapter creation and native source
+
+Creating a chapter opens a dedicated screen in the main area, with an independent title, optional planning, insertion position and a live flat outline. No side sheet or parent selector is involved. Creation inserts the chapter atomically at a validated position; metadata organization remains separate.
+
+The source view uses the official CodeMirror 6 packages and the upstream TeX stream mode, loaded lazily. Native TeX is persisted on the server; the pane never substitutes a regenerated visual projection for the source. Segmented view controls provide visual, code-only and split layouts. See [LATEX.md](LATEX.md) for canonical source, conservative visual limits and scroll mapping. References: [CodeMirror language infrastructure](https://github.com/codemirror/language), [official TeX mode](https://github.com/codemirror/legacy-modes/blob/main/mode/stex.js).
+
+Chapter navigation composes the official dnd-kit Sortable preset: a dedicated grip appears on row hover/focus, drag activation requires 5px of movement, neighboring rows shift with a 200ms easing, and the order is saved on drop. The title remains a separate navigation button. Space + arrows + Space provides keyboard sorting; Escape cancels. Reduced motion disables the row transition. Reordering sends the revision captured at drag start; conflicts roll back the optimistic order and preserve the latest server state. Grips do not dismiss the temporary hover navigation. [Sortable documentation](https://dndkit.com/legacy/presets/sortable/overview/).

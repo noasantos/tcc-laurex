@@ -139,6 +139,15 @@ try {
   });
   assert.equal(store.get().proposals[0].status, "applied");
   assert.equal(store.get().comments[0].status, "open");
+  const nativeSource = "\\section{Hipótese}\nTexto nativo \\cite{openai_tunnel}.\n% comentário preservado\n";
+  const native = (await call("create_chapter", {expectedRevision: revision(), title: "Fonte nativo", latex: nativeSource})).result;
+  assert.equal((await call("get_chapter_latex", {chapterId: native.id})).latex, nativeSource);
+  const nativeAfter = nativeSource.replace("Texto nativo", "Texto nativo revisado");
+  const nativeProposal = (await call("propose_latex_edit", {expectedRevision: revision(), chapterId: native.id, chapterRevision: native.revision, afterLatex: nativeAfter, reason: "Revisão do fonte"})).result;
+  assert.equal(store.get().chapters.find(c=>c.id === native.id)?.latex, nativeSource);
+  domain.call("approve_edit", {expectedRevision:revision(),proposalId:nativeProposal.id});
+  await call("apply_approved_edit", {expectedRevision: revision(), proposalId: nativeProposal.id});
+  assert.equal((await call("get_chapter_latex", {chapterId:native.id})).latex, nativeAfter);
   console.log(
     JSON.stringify(
       {
@@ -156,6 +165,7 @@ try {
         approvedApply: true,
         commentNotAutoResolved: true,
         copiedCommentReference: true,
+        nativeLatexReadWrite: true,
         chatgptAccountVerified: false,
       },
       null,

@@ -33,7 +33,7 @@
     box-shadow: 8px 0 28px #00000012;
   }
 }
-.navigation-workspace .sidebar.navigation-body {
+.sidebar.navigation-body {
   display: flex;
   position: static;
   flex-direction: column;
@@ -106,7 +106,7 @@
   min-width: 0;
   flex: 1;
 }
-.navigation-workspace .sidebar nav {
+.sidebar.navigation-body nav {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -121,3 +121,7 @@
     }
   }
 }
+
+/* Mobile Sidebar is portaled by the official Sheet, outside the workspace. */
+[data-slot="sidebar"][data-mobile="true"] .navigation-body {top:auto;left:auto;right:auto;bottom:auto;transform:none;}
+[data-slot="sidebar"][data-mobile="true"] .navigation-body .sidebar-footer {flex-shrink:0;}

@@ -1,7 +1,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import { CommentHover } from "./CommentHover";
 import { commentReference } from "../../server/comment-reference";
-import { LatexSource } from "./LatexSource";
+
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Node, Extension, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -11,7 +11,11 @@ import UniqueID from "@tiptap/extension-unique-id";
 import Mathematics from "@tiptap/extension-mathematics";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
+const LatexSource = lazy(() =>
+  import("./LatexSource").then((module) => ({ default: module.LatexSource })),
+);
+import "./latex-source.css";
 import {
   Bold,
   Italic,
@@ -33,6 +37,7 @@ import {
   Code2,
 } from "lucide-react";
 import type { Chapter, Comment, Doc } from "../../server/types";
+import { plain } from "../../server/types";
 import { resolveAnchor } from "../../server/anchors";
 import "katex/dist/katex.min.css";
 const Citation = Node.create({
@@ -172,7 +177,9 @@ export function DocumentEditor({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [state, setState] = useState("Salvo");
   const [more, setMore] = useState(false);
-  const [showSource, setShowSource] = useState(false);
+  const [sourceMode, setSourceMode] = useState<"visual" | "source" | "split">(
+    "visual",
+  );
   const [hovered, setHovered] = useState<{ id: string; rect: DOMRect } | null>(
     null,
   );
@@ -304,6 +311,7 @@ export function DocumentEditor({
           },
         }),
       ],
+      editable: !chapter.latexWarnings?.length,
       content: chapter.content,
       editorProps: {
         handleDOMEvents: {
@@ -389,6 +397,7 @@ export function DocumentEditor({
         },
         attributes: {
           "aria-label": "Conteúdo do capítulo",
+          tabindex: "0",
           class: "academic-editor",
         },
         handleClick(_view, _pos, event) {
@@ -424,6 +433,7 @@ export function DocumentEditor({
       },
       onSelectionUpdate: () => tick((v) => v + 1),
       onUpdate({ editor }) {
+        if (!editor.isEditable) return;
         tick((v) => v + 1);
         dirty.current = true;
         changeRef.current(true);
@@ -483,6 +493,7 @@ export function DocumentEditor({
         tick((v) => v + 1);
         lastSaved.current = JSON.stringify(chapter.content);
       }
+      editor.setEditable(!chapter.latexWarnings?.length, false);
       baseRevision.current = chapter.revision;
     }
     editor?.view.dispatch(editor.state.tr.setMeta("comments", true));
@@ -637,6 +648,7 @@ export function DocumentEditor({
         aria-label="Ferramentas do trecho selecionado"
         onMouseDown={(e) => e.preventDefault()}
       >
+        {editor.isEditable && <>
         {button(
           "Negrito na seleção",
           Bold,
@@ -656,6 +668,7 @@ export function DocumentEditor({
           editor.isActive("underline"),
         )}
         <span className="selection-separator" />
+        </>}
         <button className="selection-comment" onClick={addComment}>
           <MessageCirclePlus size={15} />
           Comentar
@@ -664,20 +677,38 @@ export function DocumentEditor({
       <div className="document-meta">
         <span>Documento / {chapter.title}</span>
         <div className="document-meta-actions">
-          <button
-            className="source-toggle"
-            aria-pressed={showSource}
-            onClick={() => setShowSource((v) => !v)}
+          <div
+            className="document-view-switch"
+            role="group"
+            aria-label="Visualização do documento"
           >
-            <Code2 size={14} /> {showSource ? "Ocultar LaTeX" : "Ver LaTeX"}
-          </button>
+            {(
+              [
+                ["visual", "Visual"],
+                ["source", "Código LaTeX"],
+                ["split", "Lado a lado"],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={sourceMode === mode}
+                onClick={() => setSourceMode(mode)}
+              >
+                {mode === "source" && <Code2 size={13} />} {label}
+              </button>
+            ))}
+          </div>
           <span className={state.startsWith("Falha") ? "error-text" : "saved"}>
             {state === "Salvo" ? <Check size={14} /> : null}
             {state}
           </span>
         </div>
       </div>
-      <div className="editor-toolbar">
+      <div
+        className="editor-toolbar"
+        hidden={sourceMode === "source" || !!chapter.latexWarnings?.length}
+      >
         <div className="toolbar-main">
           {button(
             "Negrito",
@@ -819,19 +850,45 @@ export function DocumentEditor({
       </div>
       <div
         className={
-          "document-reading-layout" + (showSource ? " source-open" : "")
+          "document-reading-layout" +
+          (sourceMode !== "visual" ? " source-open" : "") +
+          (sourceMode === "source" ? " source-only" : "")
         }
       >
-        <div className="document-body" ref={visual}>
-          <h1 className="chapter-title">{chapter.title}</h1>
+        <div
+          className="document-body"
+          ref={visual}
+          hidden={sourceMode === "source"}
+        >
+          {!(chapter.content.content?.[0]?.type === "heading" && plain(chapter.content.content[0]).trim() === chapter.title.trim()) && <h1 className="chapter-title">{chapter.title}</h1>}
+          {!!chapter.latexWarnings?.length && (
+            <p className="latex-projection-notice">
+              Este capítulo contém comandos preservados no fonte.{" "}
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setSourceMode("source")}
+              >
+                Ver código LaTeX
+              </button>
+            </p>
+          )}
           <EditorContent editor={editor} />
         </div>
-        {showSource && (
-          <LatexSource
-            content={editor.getJSON() as Doc}
-            visual={visual}
-            onClose={() => setShowSource(false)}
-          />
+        {sourceMode !== "visual" && (
+          <Suspense
+            fallback={
+              <p className="latex-source-message">Abrindo código LaTeX…</p>
+            }
+          >
+            <LatexSource
+              chapter={chapter}
+              split={sourceMode === "split"}
+              content={editor.getJSON() as Doc}
+              visual={visual}
+              onClose={() => setSourceMode("visual")}
+            />
+          </Suspense>
         )}
       </div>
       <div className="document-footer">

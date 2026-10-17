@@ -147,3 +147,23 @@
     gap: 6px;
   }
 }
+
+.document-view-switch {display:inline-flex;align-items:center;gap:2px;padding:3px;background:var(--subtle-bg,var(--selected));border-radius:6px;}
+.document-view-switch button {display:inline-flex;align-items:center;gap:4px;background:transparent;border:0;box-shadow:none;padding:5px 8px;font-size:11px;line-height:1.3;color:var(--muted);border-radius:4px;white-space:nowrap;transition:background 140ms ease,color 140ms ease;}
+.document-view-switch button[aria-pressed="true"] {background:var(--bg);color:var(--text);box-shadow:0 1px 3px #00000012;}
+.document .editor-toolbar[hidden], .document-body[hidden] {display:none;}
+.source-only .latex-source {border-left:0;margin-left:0;flex:1;}
+.source-only .latex-source-heading {padding-left:0;}
+.latex-code-editor {flex:1;min-height:0;overflow:hidden;--tex-command:#5649a5;--tex-number:#876036;--tex-string:#357480;--tex-punctuation:#64667a;}
+:root[data-theme="dark"] .latex-code-editor {--tex-command:#b6a8e8;--tex-number:#dbb58b;--tex-string:#8ec1c8;--tex-punctuation:#adafbe;}
+.latex-code-editor .cm-editor {height:100%;background:var(--bg);color:var(--text);font:13px/1.85 ui-monospace,SFMono-Regular,Consolas,monospace;}
+.latex-code-editor .cm-scroller {overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+.latex-code-editor .cm-content {padding:20px 24px 80px 12px;min-height:100%;}
+.latex-code-editor .cm-line {padding:0 4px;}
+.latex-code-editor .cm-gutters {background:var(--bg);color:var(--muted);border:0;border-right:1px solid var(--line);font-size:10px;min-width:36px;}
+.latex-code-editor .cm-lineNumbers .cm-gutterElement {padding-right:12px;padding-left:8px;}
+.latex-code-editor .cm-activeLine {background:var(--selected);}
+.latex-code-editor .cm-focused {outline:none;}
+.latex-source-status {display:flex;justify-content:space-between;gap:16px;padding:8px 12px;font-size:10px;color:var(--muted);border-top:1px solid var(--line);}
+.latex-projection-notice {font-size:12px;color:var(--muted);line-height:1.7;}
+@media (max-width:760px) {.document-meta {flex-wrap:wrap;gap:10px;}.document-meta-actions {width:100%;justify-content:space-between;}.source-only .latex-source {border-top:0;margin-top:0;}}

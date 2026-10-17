@@ -100,7 +100,13 @@ function NavigationPanel({
         setPeeking(false);
     };
     const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && visible && !event.defaultPrevented) close();
+      if (
+        event.key === "Escape" &&
+        visible &&
+        !event.defaultPrevented &&
+        !body.current?.querySelector('[data-chapter-dragging="true"]')
+      )
+        close();
     };
     document.addEventListener("pointerdown", outside);
     document.addEventListener("keydown", escape);
@@ -156,7 +162,10 @@ function NavigationPanel({
               dismissPreview();
           }}
           onClickCapture={(event) => {
-            if ((event.target as Element).closest("nav button")) {
+            if (
+              (event.target as Element).closest("nav button") &&
+              !(event.target as Element).closest("[data-chapter-drag-handle]")
+            ) {
               if (isMobile) setOpenMobile(false);
               else if (!pinned) {
                 clearTimers();

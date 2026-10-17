@@ -87,22 +87,30 @@ export function Empty({
     </div>
   );
 }
-export function Diff({ before, after }: { before: Doc; after: Doc }) {
+export function Diff({
+  before,
+  after,
+}: {
+  before: Doc | string;
+  after: Doc | string;
+}) {
+  const beforeText = typeof before === "string" ? before : plain(before);
+  const afterText = typeof after === "string" ? after : plain(after);
   return (
     <div className="diff">
       <div className="compare-columns">
         <section>
           <h4>Antes</h4>
-          <p>{plain(before) || "Sem texto"}</p>
+          <p>{beforeText || "Sem texto"}</p>
         </section>
         <section>
           <h4>Depois</h4>
-          <p>{plain(after) || "Sem texto"}</p>
+          <p>{afterText || "Sem texto"}</p>
         </section>
       </div>
       <h4>Alterações</h4>
       <p>
-        {diffWords(plain(before), plain(after)).map((p, i) =>
+        {diffWords(beforeText, afterText).map((p, i) =>
           p.added ? (
             <ins key={i}>{p.value}</ins>
           ) : p.removed ? (

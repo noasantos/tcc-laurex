@@ -15,6 +15,9 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import type { State } from "./types";
+import { dirname } from "node:path";
+import { exportLatex } from "./documents";
+import { synchronizeSources } from "./chapter-source";
 export const defaultDataDirectory = () =>
   resolve(
     join(
@@ -93,6 +96,17 @@ export class Store {
     }
     if (this.get().revision === 0)
       this.commit(0, "initialise", "system", () => {});
+    const legacy = this.get();
+    if (legacy.chapters.some((c) => c.latex === undefined && !c.latexIssue)) {
+      this.backup();
+      this.commit(
+        legacy.revision,
+        "preserve_native_latex_sources",
+        "system",
+        () => {},
+      );
+    }
+    this.materialize(this.get());
   }
   get(): State {
     return JSON.parse(
@@ -117,7 +131,9 @@ export class Store {
           { statusCode: 409 },
         );
       const op = randomUUID();
+      const before = structuredClone(s);
       mutate(s, op);
+      synchronizeSources(s, before);
       s.revision++;
       this.db.exec(
         "DELETE FROM proposal_links; DELETE FROM note_links; DELETE FROM comment_links; DELETE FROM chapter_links;",
@@ -152,23 +168,50 @@ export class Store {
         );
       this.db.prepare("UPDATE workspace SET json=? WHERE id=1").run(json);
       this.db.exec("COMMIT");
-      try {
-        atomic(join(this.root, "academic", "workspace.json"), json);
-        for (const c of s.chapters)
-          atomic(
-            join(this.root, "academic", encodeURIComponent(c.id) + ".json"),
-            JSON.stringify(c),
-          );
-      } catch (e) {
-        console.error(
-          "Cópia de leitura precisa ser regenerada; o banco foi salvo:",
-          (e as Error).message,
-        );
-      }
+      this.materialize(s);
       return s;
     } catch (e) {
       this.db.exec("ROLLBACK");
       throw e;
+    }
+  }
+  materialize(s: State) {
+    try {
+      atomic(join(this.root, "academic", "workspace.json"), JSON.stringify(s));
+      const sources = join(this.root, "academic", "chapters");
+      mkdirSync(sources, { recursive: true });
+      for (const chapter of s.chapters) {
+        atomic(
+          join(this.root, "academic", encodeURIComponent(chapter.id) + ".json"),
+          JSON.stringify(chapter),
+        );
+        if (chapter.latex !== undefined) {
+          atomic(
+            join(sources, encodeURIComponent(chapter.id) + ".tex"),
+            chapter.latex,
+          );
+          const assets: Record<string, Uint8Array> = {};
+          try {
+            exportLatex(
+              chapter.content,
+              assets,
+              `figures/${encodeURIComponent(chapter.id)}/`,
+            );
+          } catch {
+            /* unsupported original stays in its protected archive */
+          }
+          for (const [name, bytes] of Object.entries(assets)) {
+            const destination = join(sources, name);
+            mkdirSync(dirname(destination), { recursive: true });
+            atomic(destination, Buffer.from(bytes));
+          }
+        }
+      }
+    } catch (error) {
+      console.error(
+        "Cópia de leitura precisa ser regenerada; o banco foi salvo:",
+        (error as Error).message,
+      );
     }
   }
   versions() {

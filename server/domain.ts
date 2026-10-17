@@ -8,6 +8,7 @@ import { emptyDoc, plain, type State, type Doc } from "./types";
 import { resolveAnchor, anchorText } from "./anchors";
 import { commentReference, findCommentReference } from "./comment-reference";
 import { validateDoc } from "./documents";
+import { setChapterLatex, projectLatex, visualLatex } from "./chapter-source";
 const id = z.string().min(1).max(200),
   text = z.string().max(200000),
   rev = z.number().int().positive();
@@ -62,6 +63,8 @@ export const schemas = {
     title: id,
     parentId: id.nullable().optional(),
     content: doc.optional(),
+    latex: z.string().max(5_000_000).optional(),
+    position: z.number().int().nonnegative().optional(),
     plan: text.optional(),
   }),
   update_chapter: z.object({
@@ -71,6 +74,7 @@ export const schemas = {
     title: id.optional(),
     status: status.optional(),
     content: doc.optional(),
+    latex: z.string().max(5_000_000).optional(),
   }),
   reorder_chapters: z.object({ expectedRevision: rev, ids: z.array(id) }),
   update_chapter_plan: z.object({
@@ -139,7 +143,8 @@ export const schemas = {
     expectedRevision: rev,
     chapterId: id,
     chapterRevision: rev,
-    after: doc,
+    after: doc.optional(),
+    afterLatex: z.string().max(5_000_000).optional(),
     reason: text.min(1),
     commentId: id.optional(),
   }),
@@ -245,7 +250,7 @@ export class Domain {
           };
         case "list_chapters":
         case "get_project_structure":
-          return current.chapters.map(({ content, plan, ...c }) => c);
+          return current.chapters.map(({ content, plan, latex, latexWarnings, ...c }) => c);
         case "read_chapter":
           return chapter(current);
         case "get_project_status":
@@ -315,7 +320,7 @@ export class Domain {
         case "compare_versions": {
           const b = need(this.store.version(a.before).chapters, a.chapterId),
             c = need(this.store.version(a.after).chapters, a.chapterId);
-          return diffWords(plain(b.content), plain(c.content));
+          return diffWords(b.latex ?? plain(b.content), c.latex ?? plain(c.content));
         }
         case "list_references":
           return current.references;
@@ -360,7 +365,10 @@ export class Domain {
               content: a.content || emptyDoc(),
               revision: 1,
             };
-            s.chapters.push(result);
+            if (a.latex !== undefined && a.content !== undefined) throw new Error("Envie latex ou content, nunca ambos.");
+            if (a.latex !== undefined) setChapterLatex(result, a.latex);
+            if (a.position !== undefined && a.position > s.chapters.length) throw new Error("Posição de capítulo inválida");
+            s.chapters.splice(a.position ?? s.chapters.length, 0, result);
             break;
           }
           case "update_chapter": {
@@ -369,12 +377,14 @@ export class Domain {
               throw Object.assign(new Error("Capítulo mudou desde a leitura"), {
                 statusCode: 409,
               });
-            if (origin === "mcp" && a.content)
+            if (origin === "mcp" && (a.content !== undefined || a.latex !== undefined))
               throw new Error(
                 "Para revisar conteúdo existente, use propose_document_edit; Laura aprova na interface",
               );
             for (const k of ["title", "status", "content"] as const)
               if (a[k] !== undefined) (c as any)[k] = a[k];
+            if (a.latex !== undefined && a.content !== undefined) throw new Error("Envie latex ou content, nunca ambos.");
+            if (a.latex !== undefined) setChapterLatex(c, a.latex);
             c.revision++;
             result = c;
             break;
@@ -481,13 +491,19 @@ export class Domain {
               throw new Error("Capítulo mudou desde a leitura");
             if (a.commentId && comment(s).chapterId !== c.id)
               throw new Error("Comentário pertence a outro capítulo");
+            if ((a.after === undefined) === (a.afterLatex === undefined)) throw new Error("Envie afterLatex (fonte nativo) ou after, nunca ambos.");
+            if (c.latexWarnings?.length && a.after !== undefined) throw new Error("Use afterLatex para preservar o fonte protegido.");
+            const after = a.afterLatex !== undefined ? projectLatex(a.afterLatex, c.content).doc : a.after;
+            const afterLatex = a.afterLatex ?? visualLatex(after, c.id);
             result = {
               id: randomUUID(),
               chapterId: c.id,
               commentId: a.commentId,
               baseChapterRevision: c.revision,
               before: c.content,
-              after: a.after,
+              after,
+              beforeLatex: c.latex,
+              afterLatex,
               reason: a.reason,
               status: "pending",
               createdAt: now,
@@ -527,6 +543,11 @@ export class Domain {
                 ),
                 { statusCode: 409 },
               );
+            if (p.afterLatex !== undefined) {
+              c.latex = p.afterLatex;
+              c.latexRevision = (c.latexRevision || 0) + 1;
+              c.latexWarnings = projectLatex(p.afterLatex).warnings;
+            }
             c.content = p.after;
             c.revision++;
             p.status = "applied";

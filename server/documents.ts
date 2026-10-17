@@ -2,6 +2,7 @@ import { parse } from "@unified-latex/unified-latex-util-parse";
 import { toString } from "@unified-latex/unified-latex-util-to-string";
 import type { Doc } from "./types";
 import { paragraph } from "./types";
+import katex from "katex";
 const supported = new Set([
   "textbf",
   "textit",
@@ -14,11 +15,25 @@ const supported = new Set([
   "citet",
   "footnote",
 ]);
-export function importLatex(source: string): { doc: Doc; warnings: string[] } {
+export function importLatex(source: string, nativeProjection = false): { doc: Doc; warnings: string[] } {
   const ast = parse(source);
   const warnings: string[] = [];
+  const sourceOnly: string[] = [];
+  function nativeMath(n: any) {
+    return nativeProjection && (["inlinemath", "displaymath"].includes(n.type) || (n.type === "mathenv" && ["equation", "equation*", "displaymath"].includes(toString(n.env))));
+  }
   function inspect(nodes: any[]) {
     for (const n of nodes) {
+      if (nativeProjection && n.type === "comment") {
+        sourceOnly.push("Comentários do fonte foram preservados; revise pelo LaTeX para mantê-los.");
+        continue;
+      }
+      if (nativeMath(n)) {
+        try { katex.renderToString(toString(n.content), {throwOnError:true,trust:false,maxExpand:200,maxSize:20}); }
+        catch { warnings.push("Expressão preservada sem conversão visual."); }
+        sourceOnly.push("A notação matemática original foi preservada; revise pelo LaTeX para manter sua estrutura.");
+        continue;
+      }
       if (
         !["string", "whitespace", "parbreak", "group", "macro"].includes(n.type)
       )
@@ -57,6 +72,8 @@ export function importLatex(source: string): { doc: Doc; warnings: string[] } {
   };
   function convertInline(nodes: any[]): Doc[] {
     return nodes.flatMap((n): Doc[] => {
+      if (nativeProjection && n.type === "comment") return [];
+      if (nativeMath(n)) return [{type:"inlineMath",attrs:{latex:toString(n.content)}}];
       if (n.type === "string")
         return n.content ? [{ type: "text", text: n.content }] : [];
       if (n.type === "whitespace") return [{ type: "text", text: " " }];
@@ -86,6 +103,11 @@ export function importLatex(source: string): { doc: Doc; warnings: string[] } {
     });
   }
   for (const n of ast.content) {
+    if (nativeMath(n) && n.type !== "inlinemath") {
+      flush();
+      blocks.push({type:"blockMath",attrs:{id:crypto.randomUUID(),latex:toString((n as any).content)}});
+      continue;
+    }
     if (n.type === "parbreak") {
       flush();
       continue;
@@ -111,7 +133,7 @@ export function importLatex(source: string): { doc: Doc; warnings: string[] } {
   flush();
   return {
     doc: { type: "doc", content: blocks.length ? blocks : [paragraph("")] },
-    warnings: [],
+    warnings: [...new Set(sourceOnly)],
   };
 }
 const esc = (s: string) =>
@@ -127,6 +149,7 @@ const esc = (s: string) =>
 export function exportLatex(
   d: Doc,
   assets?: Record<string, Uint8Array>,
+  assetPrefix = "figures/",
 ): string {
   if (d.type === "rawLatex") return String(d.attrs?.source ?? "");
   if (d.type === "text") {
@@ -187,7 +210,7 @@ export function exportLatex(
           r
             .content!.map((c) =>
               c
-                .content!.map((n) => exportLatex(n, assets))
+                .content!.map((n) => exportLatex(n, assets, assetPrefix))
                 .join("")
                 .trim(),
             )
@@ -206,14 +229,14 @@ export function exportLatex(
     if (!match)
       throw new Error("Para exportar ao LaTeX, use figuras PNG ou JPEG");
     const name =
-      "figures/figure-" +
-      (Object.keys(assets).filter((k) => k.startsWith("figures/")).length + 1) +
+      assetPrefix + "figure-" +
+      (Object.keys(assets).filter((k) => k.startsWith(assetPrefix)).length + 1) +
       "." +
       (match[1] === "jpeg" ? "jpg" : "png");
     assets[name] = Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
     return `\\begin{figure}[ht]\n\\centering\n\\includegraphics[width=0.9\\linewidth]{${name}}\n${d.attrs?.title ? "\\caption{" + esc(String(d.attrs.title)) + "}" : ""}\n\\end{figure}\n`;
   }
-  const body = (d.content || []).map((c) => exportLatex(c, assets)).join("");
+  const body = (d.content || []).map((c) => exportLatex(c, assets, assetPrefix)).join("");
   if (d.type === "heading")
     return `\\${["section", "subsection", "subsubsection"][Math.min(3, Number(d.attrs?.level || 1)) - 1]}{${body}}\n\n`;
   if (d.type === "paragraph") return body + "\n\n";

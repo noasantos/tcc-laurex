@@ -40,7 +40,7 @@ The secure tunnel is optional and is **not created or enabled automatically**. N
 
 The current canonical names from the completed brief are exposed. Compatibility names from the first brief map to the same domain operations internally, avoiding duplicate implementations. `npm run mcp:poc` verifies discovery.
 
-Read get_project_info first to obtain revision; get_chapter returns chapter revision. Every mutation supplies expectedRevision. Text proposals also supply chapterRevision and a complete validated TipTap document. IDs are stable. Proposals can optionally reference a real comment in the same chapter. No tool can approve a proposal, execute arbitrary commands, choose arbitrary filesystem paths or read unrelated folders.
+Read get_project_info first to obtain revision; get_chapter returns chapter revision. Every mutation supplies expectedRevision. Native LaTeX proposals supply chapterRevision and afterLatex (complete literal TeX). Use create_chapter with latex, get_chapter_latex to read, and propose_latex_edit to revise. The validated TipTap after document remains a compatibility path only for the supported visual subset. Never send both after and afterLatex. IDs are stable. Proposals can optionally reference a real comment in the same chapter. No tool can approve a proposal, execute arbitrary commands, choose arbitrary filesystem paths or read unrelated folders.
 
 Local approval is a separate authority. `propose_restore` only directs Laura to the local history UI. It cannot execute a restore. `create_checkpoint` requires write consent; integrity queries are read-only. Structured outputs use a result envelope; mutations include project revision and operation ID. Tool input schemas reject unknown arguments.
 

@@ -16,7 +16,8 @@ export function academicPackage(state: State) {
   const chapterFiles = state.chapters
     .map((c, i) => {
       const name = `chapter-${String(i + 1).padStart(2, "0")}.tex`;
-      files[name] = strToU8(exportLatex(c.content, files));
+      const generated = exportLatex(c.content, files, `figures/${encodeURIComponent(c.id)}/`);
+      files[name] = strToU8(c.latex ?? generated);
       return `% ${c.title.replaceAll("\n", " ")}\n\\input{${name}}`;
     })
     .join("\n");

@@ -42,6 +42,8 @@ A configuração é assistida uma vez: use [o prompt pronto](docs/SETUP_PROMPT.t
 
 Abra Configurações:
 
+O documento permite alternar entre Visual, Código LaTeX e Lado a lado. O fonte nativo é versionado localmente; o MCP cria com `latex` e revisa com `afterLatex`, mediante aprovação. A visualização de código usa CodeMirror com realce de sintaxe e linhas numeradas.
+
 - **LaTeX `.tex`:** um subconjunto seguro é convertido para edição visual. Comandos, ambientes ou argumentos não suportados fazem o arquivo permanecer como bloco protegido, sem descartar seu código.
 - **Projeto `.zip`:** o arquivo completo é preservado. Escolha o `.tex` principal quando houver ambiguidade. O editor não expande automaticamente `\input`, estilos, macros e dependências.
 - **Word `.docx`:** importação de texto com aviso explícito. A fidelidade de formatação, campos, tabelas e imagens permanece no original; não se apresenta isso como conversão acadêmica fiel.

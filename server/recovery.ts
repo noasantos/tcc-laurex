@@ -168,12 +168,22 @@ export async function verifyBackupByRestore(file: string) {
       if (
         JSON.stringify(
           key === "chapters"
-            ? restored.chapters.map(({ revision, ...c }) => c)
+            ? restored.chapters.map(({ revision, ...c }) => {
+                if (payload.state.chapters.find((old: any) => old.id === c.id)?.latex === undefined) {
+                  delete c.latex; delete c.latexRevision; delete c.latexWarnings; delete c.latexIssue;
+                }
+                return c;
+              })
             : restored[key],
         ) !==
         JSON.stringify(
           key === "chapters"
-            ? payload.state.chapters.map(({ revision, ...c }: any) => c)
+            ? payload.state.chapters.map(({ revision, ...c }: any) => {
+                if (c.latex === undefined) {
+                  delete c.latexRevision; delete c.latexWarnings; delete c.latexIssue;
+                }
+                return c;
+              })
             : payload.state[key],
         )
       )

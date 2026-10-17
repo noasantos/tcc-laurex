@@ -12,6 +12,11 @@ export type Chapter = {
   parentId: string | null;
   plan: string;
   content: Doc;
+  /** Canonical academic source; content is its visual projection. */
+  latex?: string;
+  latexRevision?: number;
+  latexWarnings?: string[];
+  latexIssue?: string;
   revision: number;
 };
 export type Comment = {
@@ -78,6 +83,8 @@ export type Proposal = {
   baseChapterRevision: number;
   before: Doc;
   after: Doc;
+  beforeLatex?: string;
+  afterLatex?: string;
   reason: string;
   status: "pending" | "approved" | "applied" | "rejected" | "reverted";
   createdAt: string;

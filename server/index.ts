@@ -175,7 +175,7 @@ app.post("/api/latex-preview", async (req) => {
 app.get("/api/export/latex", async (_req, reply) => {
   const s = store.get();
   const tex = s.chapters
-    .map((c) => `% ${c.title}\n${exportLatex(c.content)}`)
+    .map((c) => `% ${c.title}\n${c.latex ?? exportLatex(c.content)}`)
     .join("\n");
   return reply
     .header("Content-Disposition", 'attachment; filename="chapitres.tex"')
@@ -191,6 +191,7 @@ function importAcademic(
   buffer: Buffer,
   expectedRevision: number,
   extension: string,
+  latex?: string,
 ) {
   validateDoc(doc);
   if (store.get().revision !== expectedRevision)
@@ -221,6 +222,7 @@ function importAcademic(
         parentId: null,
         plan: "",
         content: doc,
+        ...(latex !== undefined ? { latex, latexWarnings: importLatex(latex, true).warnings } : {}),
         revision: 1,
       };
       s.chapters.push(chapter);
@@ -236,13 +238,14 @@ app.post("/api/import/latex", async (req) => {
       source: z.string().max(5_000_000),
     })
     .parse(req.body);
-  const imported = importLatex(a.source);
+  const imported = importLatex(a.source, true);
   const result = importAcademic(
     a.name,
     imported.doc,
     Buffer.from(a.source),
     a.expectedRevision,
     "tex",
+    a.source,
   );
   return { ...result, warnings: imported.warnings };
 });
@@ -258,6 +261,7 @@ app.post("/api/import/archive", async (req) => {
     .parse(req.body);
   const buffer = Buffer.from(a.base64, "base64");
   let imported: { doc: any; warnings: string[] };
+  let latex: string | undefined;
   if (a.kind === "docx") imported = importWord(buffer);
   else {
     const files = unpack(buffer);
@@ -272,8 +276,8 @@ app.post("/api/import/archive", async (req) => {
     if (!main) return { selectionRequired: true, files: tex };
     if (!tex.includes(main))
       throw new Error("Selecione um arquivo .tex existente no projeto");
-    const source = new TextDecoder().decode(files[main]);
-    imported = importLatex(source);
+    latex = new TextDecoder().decode(files[main]);
+    imported = importLatex(latex, true);
     imported.warnings.push(
       "O projeto completo foi preservado no ZIP original. A edição visual usa apenas o arquivo principal selecionado; includes, estilos, imagens e bibliografia permanecem no arquivo original.",
     );
@@ -284,6 +288,7 @@ app.post("/api/import/archive", async (req) => {
     buffer,
     a.expectedRevision,
     a.kind,
+    latex,
   );
   return { ...result, warnings: imported.warnings };
 });

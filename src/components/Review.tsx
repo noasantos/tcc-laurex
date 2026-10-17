@@ -44,6 +44,15 @@ export function ProposalDetail({ p, mutate }: { p: Proposal; mutate: Mutate }) {
       {p.appliedAt && <small>Aplicada em {date(p.appliedAt)}</small>}
       {p.rejectedAt && <small>Rejeitada em {date(p.rejectedAt)}</small>}
       <Diff before={p.before} after={p.after} />
+      {p.afterLatex !== undefined && (
+        <details className="source-diff">
+          <summary>Comparar fonte LaTeX</summary>
+          <Diff
+            before={p.beforeLatex ?? plain(p.before)}
+            after={p.afterLatex}
+          />
+        </details>
+      )}
       <div className="actions">
         {p.status === "pending" && (
           <button

@@ -1,3 +1,5 @@
+import { ChapterNavigation } from "./components/ChapterNavigation";
+import { ChapterCreate } from "./components/ChapterCreate";
 import { NavigationWorkspace } from "./components/NavigationWorkspace";
 import { HeaderSearch } from "./components/HeaderSearch";
 import { Select, SelectOption } from "./components/Select";
@@ -245,7 +247,7 @@ export default function App() {
     <div
       className={
         "app-shell " +
-        (["plan", "chapter", "metadata"].includes(modal) || recovery
+        (["plan", "metadata"].includes(modal) || recovery
           ? " has-side-sheet"
           : "")
       }
@@ -313,36 +315,12 @@ export default function App() {
               <span>Capítulos</span>
               <button
                 aria-label="Criar capítulo"
-                onClick={() => setModal("chapter")}
+                onClick={() => goPage("new-chapter")}
               >
                 <Plus size={17} />
               </button>
             </div>
-            <div className="chapter-nav">
-              {state.chapters.map((c) => (
-                <button
-                  key={c.id}
-                  className={
-                    "chapter-nav-item " +
-                    (page === "document" && chapterId === c.id
-                      ? "selected"
-                      : "")
-                  }
-                  style={{ paddingLeft: c.parentId ? 28 : 12 }}
-                  onClick={() => navigate(c.id)}
-                >
-                  {c.title}
-                </button>
-              ))}
-              {!state.chapters.length && (
-                <button
-                  className="nav-empty"
-                  onClick={() => setModal("chapter")}
-                >
-                  Adicionar primeiro capítulo
-                </button>
-              )}
-            </div>
+            {state.chapters.length ? <ChapterNavigation chapters={state.chapters} revision={state.revision} selectedId={page === "document" ? chapterId : ""} onNavigate={navigate} onReorder={(ids, expectedRevision) => mutate("reorder_chapters", {ids,expectedRevision})}/> : <button className="nav-empty" onClick={() => goPage("new-chapter")}>Adicionar primeiro capítulo</button>}
             <div className="sidebar-divider" />
             {nav(
               "Comentários",
@@ -370,6 +348,7 @@ export default function App() {
           </div>
         </>}>
         <main className="main-content">
+          {page === "new-chapter" && <ChapterCreate state={state} mutate={mutate} onCreated={navigate} onCancel={() => goPage(chapter ? "document" : "overview")}/>}
           {error && (
             <div className="error-banner" role="alert">
               <span>{error}</span>
@@ -550,7 +529,7 @@ export default function App() {
                 title="Seu trabalho começa aqui"
                 description="Crie a estrutura ou importe seu projeto LaTeX. O texto pode chegar depois, com o ChatGPT."
               >
-                <button className="primary" onClick={() => setModal("chapter")}>
+                <button className="primary" onClick={() => goPage("new-chapter")}>
                   <Plus size={16} /> Criar capítulo
                 </button>
                 <button onClick={() => goPage("settings")}>
@@ -670,27 +649,16 @@ export default function App() {
           />
         </Modal>
       )}
-      {(modal === "chapter" || (modal === "metadata" && panelChapter)) && (
+      {(modal === "metadata" && panelChapter) && (
         <SidePanel
-          title={
-            modal === "chapter"
-              ? "Novo capítulo ou seção"
-              : "Organizar capítulo"
-          }
+          title="Organizar capítulo"
           onClose={() => setModal("")}
         >
           <form
             onSubmit={async (e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
-              if (modal === "chapter") {
-                const r = await mutate("create_chapter", {
-                  title: f.get("title"),
-                  parentId: f.get("parentId") || null,
-                  plan: f.get("plan"),
-                });
-                navigate(r.result.id);
-              } else if (panelChapter)
+              if (panelChapter)
                 await mutate("update_chapter", {
                   chapterId: panelChapter!.id,
                   chapterRevision: panelChapterRevision,
@@ -708,28 +676,9 @@ export default function App() {
                 defaultValue={modal === "metadata" ? panelChapter?.title : ""}
               />
             </Field>
-            {modal === "chapter" && (
-              <>
-                <Field label="Capítulo principal (opcional)">
-                  <Select name="parentId">
-                    <SelectOption value="">
-                      Novo capítulo independente
-                    </SelectOption>
-                    {state.chapters.map((c) => (
-                      <SelectOption key={c.id} value={c.id}>
-                        {c.title}
-                      </SelectOption>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Objetivo e ideias iniciais">
-                  <textarea name="plan" rows={4} />
-                </Field>
-              </>
-            )}
             <div className="actions">
               <button className="primary">
-                {modal === "chapter" ? "Criar" : "Guardar título"}
+                Guardar título
               </button>
             </div>
           </form>
@@ -965,10 +914,10 @@ export default function App() {
               </Field>
             ) : insert.kind === "image" ? (
               <>
-                <Field label="Arquivo PNG, JPEG ou WebP">
+                <Field label="Arquivo PNG ou JPEG">
                   <input
                     type="file"
-                    accept="image/png,image/jpeg,image/webp"
+                    accept="image/png,image/jpeg"
                     required
                     onChange={(e) => {
                       const file = e.target.files?.[0];
