@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { Select } from "./Select";
 import { X } from "lucide-react";
 import {
@@ -165,7 +166,7 @@ export function SidePanel({
     document.addEventListener("keydown", escape);
     return () => document.removeEventListener("keydown", escape);
   }, []);
-  return (
+  return createPortal(
     <aside
       ref={ref}
       className={"side-sheet " + (wide ? "wide" : "")}
@@ -182,7 +183,8 @@ export function SidePanel({
         </button>
       </header>
       <div className="side-sheet-body">{children}</div>
-    </aside>
+    </aside>,
+    document.querySelector(".app-shell") || document.body,
   );
 }
 export function ContextPopover({

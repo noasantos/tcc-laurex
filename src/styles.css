@@ -2345,6 +2345,7 @@ body,
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 .side-sheet.wide {
   width: min(620px, 50vw);
@@ -2368,6 +2369,7 @@ body,
 .side-sheet-body {
   padding: 22px;
   min-height: 0;
+  flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
