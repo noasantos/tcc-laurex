@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import type { Comment } from "../../server/types";
-import {
-  commentReference,
-  commentReferenceRequest,
-} from "../../server/comment-reference";
+import { commentReferenceRequest } from "../../server/comment-reference";
 export function CopyCommentReference({ comment }: { comment: Comment }) {
   const [state, setState] = useState<"ready" | "copied" | "error">("ready");
   const reset = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -18,37 +15,37 @@ export function CopyCommentReference({ comment }: { comment: Comment }) {
     <div className="comment-copy">
       <button
         type="button"
-        className="text-button"
-        title="Copiar referência e pedido para o ChatGPT"
-        aria-label={`Copiar referência ${commentReference(comment.id)} para o ChatGPT`}
+        className="text-button comment-copy-button"
+        data-copy-state={state}
+        title="Copiar pedido para a conversa do TCC"
+        aria-label={state === "copied" ? "Copiado" : "Copiar para o ChatGPT"}
         onClick={async () => {
+          if (reset.current) clearTimeout(reset.current);
           try {
-            await navigator.clipboard.writeText(
-              commentReferenceRequest(comment),
-            );
+            await navigator.clipboard.writeText(commentReferenceRequest(comment));
             setState("copied");
-            if (reset.current) clearTimeout(reset.current);
             reset.current = setTimeout(() => setState("ready"), 2200);
           } catch {
             setState("error");
           }
         }}
       >
-        {state === "copied" ? <Check size={13} /> : <Copy size={13} />}
-        {state === "copied"
-          ? "Copiado para o ChatGPT"
-          : commentReference(comment.id)}
+        <span className="comment-copy-swap comment-copy-icons" aria-hidden="true">
+          <Copy size={13} className="comment-copy-ready" />
+          <Check size={13} className="comment-copy-success" />
+        </span>
+        <span className="comment-copy-swap" aria-hidden="true">
+          <span className="comment-copy-ready">Copiar para o ChatGPT</span>
+          <span className="comment-copy-success">Copiado</span>
+        </span>
       </button>
       <span className="sr-only" role="status">
         {state === "copied"
-          ? "Referência copiada. Cole na conversa do TCC."
+          ? "Pedido copiado. Cole na conversa do TCC."
           : ""}
       </span>
       {state === "error" && (
-        <small role="alert">
-          Não foi possível copiar. Selecione a referência acima e copie
-          manualmente.
-        </small>
+        <small role="alert">Não foi possível copiar. Tente novamente.</small>
       )}
     </div>
   );

@@ -225,3 +225,14 @@
     transition: none;
   }
 }
+
+/* Both labels share a cell so feedback never moves the surrounding actions. */
+.comment-copy-swap { display: inline-grid; align-items: center; justify-items: start; text-align: left; }
+.comment-copy-swap > * { grid-area: 1 / 1; transition: opacity 160ms ease, transform 180ms ease; }
+.comment-copy-icons { width: 13px; height: 13px; }
+.comment-copy-success { opacity: 0; transform: translateY(3px); }
+.comment-copy-button[data-copy-state="copied"] .comment-copy-ready { opacity: 0; transform: translateY(-3px); }
+.comment-copy-button[data-copy-state="copied"] .comment-copy-success { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .comment-copy-swap > * { transition: none; transform: none !important; }
+}
