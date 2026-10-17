@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { Store } from "../server/store";
 import { Domain } from "../server/domain";
 import { paragraph } from "../server/types";
+import { commentReference } from "../server/comment-reference";
 const root = mkdtempSync(join(tmpdir(), "laura-mcp-poc-"));
 const store = new Store(root);
 const domain = new Domain(store);
@@ -97,8 +98,22 @@ try {
       chapterId: chapter.id,
       body: "Aprofundar",
       quote: "Texto",
+      anchor: { blockId: read.content.content[0].attrs.id, scope: "selection" },
     })
   ).result;
+  const commentContext = await call("get_comment_context", {
+    commentId: commentReference(comment.id),
+  });
+  assert.equal(commentContext.id, comment.id);
+  assert.equal(commentContext.project.id, info.id);
+  assert.equal(commentContext.chapter.id, chapter.id);
+  assert.equal(commentContext.quote, "Texto");
+  assert.equal(commentContext.currentExcerpt, "Texto");
+  assert.ok(
+    (await call("list_comments", { query: commentReference(comment.id) })).some(
+      (c: any) => c.id === comment.id,
+    ),
+  );
   const proposal = (
     await call("propose_document_edit", {
       expectedRevision: revision(),
@@ -140,6 +155,7 @@ try {
         unauthorizedApplyBlocked: true,
         approvedApply: true,
         commentNotAutoResolved: true,
+        copiedCommentReference: true,
         chatgptAccountVerified: false,
       },
       null,

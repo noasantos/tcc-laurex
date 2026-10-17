@@ -21,14 +21,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-slot="select-content"] {
+  [data-slot="select-content"],
+  [data-slot="popover-content"] {
     animation: none !important;
   }
 }
 
 /* Apply shadcn's border token locally; the existing app keeps its own base styles. */
 @layer base {
-  [data-slot="select-content"] {
+  [data-slot="select-content"],
+  [data-slot="popover-content"] {
     border-color: var(--color-border);
   }
 }

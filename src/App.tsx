@@ -38,6 +38,7 @@ import {
   Empty,
   type AnchorRect,
 } from "./components/Primitives";
+import { CommentSidebar } from "./components/CommentSidebar";
 import { CommentsPanel, ProposalDetail } from "./components/Review";
 import {
   Notebook,
@@ -555,25 +556,23 @@ export default function App() {
                     </button>
                   </div>
                 </section>
-                {commentPanel && (
-                  <aside className="context-panel">
-                    <button
-                      className="context-close"
-                      aria-label="Recolher comentários"
-                      onClick={() => setCommentPanel(false)}
-                    >
-                      <X size={18} />
-                    </button>
-                    <CommentsPanel
-                      key={chapter.id + commentId + searchNavigation}
-                      state={state}
-                      mutate={mutate}
-                      chapterId={chapter.id}
-                      selectedId={commentId}
-                      onNavigate={navigate}
-                    />
-                  </aside>
-                )}
+                <CommentSidebar open={commentPanel}>
+                  <button
+                    className="context-close"
+                    aria-label="Recolher comentários"
+                    onClick={() => setCommentPanel(false)}
+                  >
+                    <X size={18} />
+                  </button>
+                  <CommentsPanel
+                    key={chapter.id + commentId + searchNavigation}
+                    state={state}
+                    mutate={mutate}
+                    chapterId={chapter.id}
+                    selectedId={commentId}
+                    onNavigate={navigate}
+                  />
+                </CommentSidebar>
               </div>
             ) : (
               <Empty

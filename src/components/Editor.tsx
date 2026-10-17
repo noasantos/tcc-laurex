@@ -1,4 +1,6 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { CommentHover } from "./CommentHover";
+import { commentReference } from "../../server/comment-reference";
 import { LatexSource } from "./LatexSource";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Node, Extension, mergeAttributes } from "@tiptap/core";
@@ -171,6 +173,39 @@ export function DocumentEditor({
   const [state, setState] = useState("Salvo");
   const [more, setMore] = useState(false);
   const [showSource, setShowSource] = useState(false);
+  const [hovered, setHovered] = useState<{ id: string; rect: DOMRect } | null>(
+    null,
+  );
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const draggedSelection = useRef(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearHoverTimers = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+  };
+  const closeHover = () => {
+    clearHoverTimers();
+    setHovered(null);
+  };
+  const leaveHover = () => {
+    clearHoverTimers();
+    leaveTimer.current = setTimeout(() => setHovered(null), 180);
+  };
+  const showHover = (
+    element: HTMLElement,
+    clientY?: number,
+    immediate = false,
+  ) => {
+    clearHoverTimers();
+    const rect =
+      Array.from(element.getClientRects()).find(
+        (r) => clientY !== undefined && r.top <= clientY && r.bottom >= clientY,
+      ) || element.getBoundingClientRect();
+    const show = () => setHovered({ id: element.dataset.commentId!, rect });
+    if (immediate) show();
+    else hoverTimer.current = setTimeout(show, 200);
+  };
   const visual = useRef<HTMLDivElement>(null);
   const [editTick, tick] = useState(0);
   const dirty = useRef(false);
@@ -223,76 +258,41 @@ export function DocumentEditor({
                             !node.isTextblock
                           )
                             return;
-                          if (c.anchor.scope === "paragraph") {
-                            decorations.push(
-                              Decoration.node(pos, pos + node.nodeSize, {
-                                class:
-                                  "commented-paragraph" +
-                                  (c.id === focusCommentRef.current
-                                    ? " comment-target-highlight"
-                                    : ""),
-                                "data-comment-id": c.id,
-                              }),
-                            );
-                            if (range === resolved.ranges.at(-1))
+                          let textOffset = 0;
+                          node.descendants((child, childPos) => {
+                            if (!child.isText) return;
+                            const length = child.text!.length;
+                            const from =
+                              c.anchor.scope === "paragraph"
+                                ? 0
+                                : Math.max(0, range.from - textOffset);
+                            const to =
+                              c.anchor.scope === "paragraph"
+                                ? length
+                                : Math.min(length, range.to - textOffset);
+                            if (to > from)
                               decorations.push(
-                                Decoration.widget(
-                                  pos + node.nodeSize - 1,
-                                  () => {
-                                    const element =
-                                      document.createElement("span");
-                                    element.className = "comment-widget";
-                                    element.dataset.commentId = c.id;
-                                    element.contentEditable = "false";
-                                    element.textContent = c.body;
-                                    element.setAttribute("role", "button");
-                                    element.setAttribute(
-                                      "aria-label",
-                                      "Abrir comentário associado ao parágrafo",
-                                    );
-                                    element.tabIndex = 0;
-                                    element.addEventListener(
-                                      "keydown",
-                                      (event) => {
-                                        if (
-                                          event.key === "Enter" ||
-                                          event.key === " "
-                                        ) {
-                                          event.preventDefault();
-                                          callbacks.current.onOpenComment(c.id);
-                                        }
-                                      },
-                                    );
-                                    return element;
+                                Decoration.inline(
+                                  pos + 1 + childPos + from,
+                                  pos + 1 + childPos + to,
+                                  {
+                                    class:
+                                      "comment-highlight" +
+                                      (c.id === focusCommentRef.current
+                                        ? " comment-target-highlight"
+                                        : ""),
+                                    "data-comment-id": c.id,
+                                    role: "button",
+                                    tabindex: "0",
+                                    "aria-label":
+                                      "Ver comentário " +
+                                      commentReference(c.id),
+                                    "aria-haspopup": "dialog",
                                   },
-                                  { key: c.id + "-label" },
                                 ),
                               );
-                          } else {
-                            let textOffset = 0;
-                            node.descendants((child, childPos) => {
-                              if (!child.isText) return;
-                              const length = child.text!.length;
-                              const from = Math.max(0, range.from - textOffset),
-                                to = Math.min(length, range.to - textOffset);
-                              if (to > from)
-                                decorations.push(
-                                  Decoration.inline(
-                                    pos + 1 + childPos + from,
-                                    pos + 1 + childPos + to,
-                                    {
-                                      class:
-                                        "comment-highlight" +
-                                        (c.id === focusCommentRef.current
-                                          ? " comment-target-highlight"
-                                          : ""),
-                                      "data-comment-id": c.id,
-                                    },
-                                  ),
-                                );
-                              textOffset += length;
-                            });
-                          }
+                            textOffset += length;
+                          });
                         });
                       }
                     }
@@ -306,6 +306,87 @@ export function DocumentEditor({
       ],
       content: chapter.content,
       editorProps: {
+        handleDOMEvents: {
+          pointerover(_view, event) {
+            const e = event as PointerEvent;
+            const target = (e.target as Element).closest<HTMLElement>(
+              "[data-comment-id]",
+            );
+            if (
+              target &&
+              !e.buttons &&
+              window.getSelection()?.isCollapsed !== false
+            )
+              showHover(target, e.clientY);
+            return false;
+          },
+          pointerout(_view, event) {
+            const e = event as PointerEvent;
+            const target = (e.target as Element).closest<HTMLElement>(
+              "[data-comment-id]",
+            );
+            if (
+              target &&
+              !(
+                e.relatedTarget instanceof Element &&
+                e.relatedTarget
+                  .closest("[data-comment-id]")
+                  ?.getAttribute("data-comment-id") === target.dataset.commentId
+              )
+            )
+              leaveHover();
+            return false;
+          },
+          pointerdown(_view, event) {
+            const e = event as PointerEvent;
+            pointerStart.current = { x: e.clientX, y: e.clientY };
+            draggedSelection.current = false;
+            closeHover();
+            return false;
+          },
+          pointermove(_view, event) {
+            const e = event as PointerEvent;
+            if (
+              e.buttons &&
+              pointerStart.current &&
+              Math.hypot(
+                e.clientX - pointerStart.current.x,
+                e.clientY - pointerStart.current.y,
+              ) > 4
+            )
+              draggedSelection.current = true;
+            return false;
+          },
+          focusin(_view, event) {
+            const target = (event.target as Element).closest<HTMLElement>(
+              "[data-comment-id]",
+            );
+            if (target) showHover(target, undefined, true);
+            return false;
+          },
+          focusout() {
+            leaveHover();
+            return false;
+          },
+          keydown(_view, event) {
+            const e = event as KeyboardEvent;
+            const target = (e.target as Element).closest<HTMLElement>(
+              "[data-comment-id]",
+            );
+            if (e.key === "Escape") closeHover();
+            if (
+              target &&
+              document.activeElement === target &&
+              (e.key === "Enter" || e.key === " ")
+            ) {
+              e.preventDefault();
+              closeHover();
+              callbacks.current.onOpenComment(target.dataset.commentId!);
+              return true;
+            }
+            return false;
+          },
+        },
         attributes: {
           "aria-label": "Conteúdo do capítulo",
           class: "academic-editor",
@@ -329,6 +410,8 @@ export function DocumentEditor({
             return true;
           }
           if (el?.dataset.commentId) {
+            if (draggedSelection.current) return false;
+            closeHover();
             callbacks.current.onOpenComment(el.dataset.commentId);
             return true;
           }
@@ -419,22 +502,47 @@ export function DocumentEditor({
   useEffect(() => {
     if (!editor || !focusCommentId) return;
     editor.view.dispatch(editor.state.tr.setMeta("comments", true));
-    const target = editor.view.dom.querySelector<HTMLElement>(
-      ".comment-target-highlight",
-    );
     const pane = visual.current;
-    if (!target || !pane) return;
-    const top =
-      target.getBoundingClientRect().top -
-      pane.getBoundingClientRect().top +
-      pane.scrollTop;
-    pane.scrollTo({
-      top: Math.max(0, top - pane.clientHeight * 0.25),
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-    });
+    if (!pane) return;
+    const reveal = () => {
+      const target = editor.view.dom.querySelector<HTMLElement>(
+        ".comment-target-highlight",
+      );
+      if (!target) return;
+      const top =
+        target.getBoundingClientRect().top -
+        pane.getBoundingClientRect().top +
+        pane.scrollTop;
+      pane.scrollTo({
+        top: Math.max(0, top - pane.clientHeight * 0.25),
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+    };
+    reveal();
+    const panel = pane
+      .closest(".document-layout")
+      ?.querySelector<HTMLElement>(".animated-comments");
+    const afterTransition = (event: TransitionEvent) => {
+      if (
+        event.target === panel &&
+        panel?.dataset.open === "true" &&
+        ["width", "transform"].includes(event.propertyName)
+      )
+        reveal();
+    };
+    panel?.addEventListener("transitionend", afterTransition);
+    return () => panel?.removeEventListener("transitionend", afterTransition);
   }, [focusCommentId, focusRequest, editor]);
+  useEffect(() => {
+    const pane = visual.current;
+    pane?.addEventListener("scroll", closeHover, { passive: true });
+    return () => {
+      pane?.removeEventListener("scroll", closeHover);
+      clearHoverTimers();
+    };
+  }, [editor]);
   if (!editor) return null;
   const button = (label: string, Icon: any, fn: () => void, active = false) => (
     <button
@@ -494,6 +602,19 @@ export function DocumentEditor({
   };
   return (
     <>
+      {hovered && comments.find((c) => c.id === hovered.id) && (
+        <CommentHover
+          comment={comments.find((c) => c.id === hovered.id)!}
+          rect={hovered.rect}
+          onClose={closeHover}
+          onEnter={clearHoverTimers}
+          onLeave={leaveHover}
+          onOpen={() => {
+            closeHover();
+            onOpenComment(hovered.id);
+          }}
+        />
+      )}
       <BubbleMenu
         editor={editor}
         appendTo={() => document.body}

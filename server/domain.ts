@@ -5,7 +5,8 @@ import { randomUUID } from "node:crypto";
 import { diffWords } from "diff";
 import { Store } from "./store";
 import { emptyDoc, plain, type State, type Doc } from "./types";
-import { resolveAnchor } from "./anchors";
+import { resolveAnchor, anchorText } from "./anchors";
+import { commentReference, findCommentReference } from "./comment-reference";
 import { validateDoc } from "./documents";
 const id = z.string().min(1).max(200),
   text = z.string().max(200000),
@@ -229,6 +230,8 @@ export class Domain {
       if (!readonlyTools.has(name) && !current.settings.mcpWrite)
         throw new Error("Escrita MCP não autorizada");
     }
+    if (typeof a.commentId === "string")
+      a.commentId = findCommentReference(current.comments, a.commentId).id;
     const chapter = (s: State) => need(s.chapters, a.chapterId);
     const comment = (s: State) => need(s.comments, a.commentId);
     const proposal = (s: State) => need(s.proposals, a.proposalId);
@@ -263,26 +266,33 @@ export class Domain {
             ).length,
           };
         case "list_comments":
-          return current.comments.filter(
-            (c) =>
-              (!a.chapterId || c.chapterId === a.chapterId) &&
+          return current.comments.map(c => ({ ...c, reference: commentReference(c.id) })).filter(
+            c => (!a.chapterId || c.chapterId === a.chapterId) &&
               (!a.status || c.status === a.status) &&
-              (!a.query ||
-                JSON.stringify(c)
-                  .toLowerCase()
-                  .includes(a.query.toLowerCase())),
+              (!a.query || JSON.stringify(c).toLowerCase().includes(a.query.toLowerCase())),
           );
-        case "get_comment":
-          return {
-            ...comment(current),
-            anchorResolution: resolveAnchor(
-              need(current.chapters, comment(current).chapterId).content,
-              comment(current),
-            ),
-            proposals: current.proposals.filter(
-              (p) => p.commentId === a.commentId,
-            ),
+        case "get_comment": {
+          const c = comment(current), chapter = need(current.chapters, c.chapterId);
+          const resolution = resolveAnchor(chapter.content, c);
+          const blocks = new Map<string, Doc>();
+          const indexBlocks = (doc: Doc) => {
+            if (typeof doc.attrs?.id === "string") blocks.set(doc.attrs.id, doc);
+            doc.content?.forEach(indexBlocks);
           };
+          indexBlocks(chapter.content);
+          return {
+            ...c,
+            reference: commentReference(c.id),
+            project: { id: current.id, name: current.name, revision: current.revision },
+            chapter: { id: chapter.id, title: chapter.title, revision: chapter.revision },
+            currentExcerpt: resolution.ranges.length ? resolution.ranges.map(range => {
+              const block = blocks.get(range.blockId);
+              return block ? anchorText(block).slice(range.from, range.to) : "";
+            }).join("\n\n") : null,
+            anchorResolution: resolution,
+            proposals: current.proposals.filter(p => p.commentId === c.id),
+          };
+        }
         case "list_notes":
           return current.notes.filter(
             (n) =>

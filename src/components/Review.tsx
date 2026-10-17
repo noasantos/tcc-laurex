@@ -1,3 +1,5 @@
+import { CopyCommentReference } from "./CopyCommentReference";
+import { commentReference } from "../../server/comment-reference";
 import { CommentText } from "./CommentText";
 import "./comments.css";
 import { Select, SelectOption } from "./Select";
@@ -123,7 +125,9 @@ export function CommentsPanel({
         (c.reviewState || c.status) === filter) &&
       (!author || (c.author || "Laura") === author) &&
       (!since || c.createdAt.slice(0, 10) >= since) &&
-      JSON.stringify(c).toLowerCase().includes(search.toLowerCase()),
+      (JSON.stringify(c) + commentReference(c.id))
+        .toLowerCase()
+        .includes(search.toLowerCase()),
   );
   return (
     <section className="review-panel">
@@ -253,6 +257,7 @@ export function CommentsPanel({
               )}
               <CommentText text={c.body} />
               <div className="comment-context-actions">
+                <CopyCommentReference comment={c} />
                 <button
                   className="text-button"
                   onClick={() => onNavigate(c.chapterId, c.id)}

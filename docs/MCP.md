@@ -47,3 +47,7 @@ Local approval is a separate authority. `propose_restore` only directs Laura to 
 ## Assisted daily use
 
 See [OPERATING_MODEL.md](OPERATING_MODEL.md). Runtime tools can restart the web process while the independent stdio MCP/tunnel remains available. `create_project_archive` creates a verified full ZIP only when requested. The manual JSON exchange is a support endpoint, not a normal UI workflow. Project instructions must actually be saved in Laura's existing ChatGPT project; a repository file alone does not update them.
+
+## Referências copiadas de comentários
+
+No documento ou na lateral, use a ação de copiar a referência `C-xxxxxxxx` e cole o pedido na conversa do TCC. O pedido identifica a ferramenta `get_comment_context` e o ID exato. A consulta retorna projeto, capítulo, revisões, seleção original, localização/trecho atual quando recuperável, respostas, histórico e propostas. Referências curtas também são aceitas diretamente; colisões são rejeitadas e exigem o ID completo. Não presuma que o trecho ainda existe: verifique `anchorResolution` e `currentExcerpt`. A cópia não ativa nem configura uma conexão MCP ausente.
