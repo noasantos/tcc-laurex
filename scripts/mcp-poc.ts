@@ -119,8 +119,12 @@ try {
       (c: any) => c.id === comment.id,
     ),
   );
+  await assert.rejects(() => call("propose_comment_edit", {
+    expectedRevision: revision(), chapterId: chapter.id, chapterRevision: chapter.revision,
+    reason: "Sem vínculo", afterLatex: "Não deve passar sem commentId.",
+  }));
   const proposal = (
-    await call("propose_document_edit", {
+    await call("propose_comment_edit", {
       expectedRevision: revision(),
       chapterId: chapter.id,
       chapterRevision: 1,
@@ -144,6 +148,10 @@ try {
   });
   assert.equal(store.get().proposals[0].status, "applied");
   assert.equal(store.get().comments[0].status, "open");
+  const revisedComment = await call("get_comment_context", {commentId: comment.id});
+  assert.deepEqual(revisedComment.proposals[0].before, read.content);
+  assert.deepEqual(revisedComment.proposals[0].after, proposal.after);
+  assert.ok(revisedComment.history.some((event: any) => event.action === "applied" && event.proposalId === proposal.id && event.version === revisedComment.proposals[0].appliedVersion));
   const nativeSource = "\\section{Hipótese}\nTexto nativo \\cite{openai_tunnel}.\n% comentário preservado\n";
   const native = (await call("create_chapter", {expectedRevision: revision(), title: "Fonte nativo", latex: nativeSource})).result;
   assert.equal((await call("get_chapter_latex", {chapterId: native.id})).latex, nativeSource);

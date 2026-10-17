@@ -86,7 +86,7 @@ export const schemas = {
   set_comment_state: z.object({
     expectedRevision: rev,
     commentId: id,
-    state: z.enum(["open", "analyzing"]),
+    state: z.enum(["open", "resolved"]),
   }),
   list_comments: z.object({
     chapterId: id.optional(),
@@ -433,18 +433,23 @@ export class Domain {
             };
             s.comments.push(result);
             break;
-          case "set_comment_state":
-            comment(s).reviewState = a.state;
-            comment(s).status = "open";
-            result = comment(s);
+          case "set_comment_state": {
+            const c = comment(s);
+            c.status = a.state;
+            c.reviewState = a.state;
+            if (a.state === "resolved") c.resolvedAt = now;
+            else delete c.resolvedAt;
+            (c.history ??= []).push({at: now, action: a.state === "resolved" ? "resolved" : "reopened", origin, version: s.revision + 1});
+            result = c;
             break;
+          }
           case "reply_to_comment":
             comment(s).replies.push({ body: a.body, at: now, origin });
             result = comment(s);
             break;
           case "resolve_comment":
             comment(s).reviewState = "resolved";
-            comment(s).history?.push({
+            (comment(s).history ??= []).push({
               at: now,
               action: "resolved",
               origin,
@@ -455,8 +460,8 @@ export class Domain {
             result = comment(s);
             break;
           case "reopen_comment":
-            comment(s).reviewState = "reopened";
-            comment(s).history?.push({
+            comment(s).reviewState = "open";
+            (comment(s).history ??= []).push({
               at: now,
               action: "reopened",
               origin,
@@ -521,8 +526,7 @@ export class Domain {
             s.proposals.push(result);
             if (a.commentId) {
               const c = comment(s);
-              if (c.status !== "resolved") c.reviewState = "proposed";
-              c.history?.push({
+              (c.history ??= []).push({
                 at: now,
                 action: "proposed",
                 origin,
@@ -564,6 +568,10 @@ export class Domain {
             p.appliedAt = now;
             p.appliedVersion = s.revision + 1;
             p.operationId = operationId;
+            if (p.commentId) {
+              const linked = need(s.comments, p.commentId);
+              (linked.history ??= []).push({at: now, action: "applied", origin, version: s.revision + 1, proposalId: p.id});
+            }
             result = p;
             break;
           }

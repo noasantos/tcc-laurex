@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { request, action } from "./api";
-import type { State, Doc, Chapter, Reference } from "../server/types";
+import type { State, Doc, Chapter, Reference, Proposal } from "../server/types";
 import { plain } from "../server/types";
 import type { SelectionAnchor } from "./components/Editor";
 const DocumentEditor = lazy(() =>
@@ -41,7 +41,7 @@ import {
   type AnchorRect,
 } from "./components/Primitives";
 import { CommentSidebar } from "./components/CommentSidebar";
-import { CommentsPanel, ProposalDetail } from "./components/Review";
+import { CommentsPanel, ProposalDetail, DocumentComparison } from "./components/Review";
 import {
   Notebook,
   References,
@@ -95,6 +95,7 @@ export default function App() {
   const stateRef = useRef<State | null>(null);
   const queue = useRef(Promise.resolve());
   const editorSave = useRef<{ flush: () => Promise<void>; release: () => void } | null>(null);
+  const [comparisonId, setComparisonId] = useState("");
   const [visibleCommentAnchors, setVisibleCommentAnchors] = useState<{ chapterId: string; ids: string[] }>({chapterId: "", ids: []});
   async function refresh() {
     const s = await request<State>("state");
@@ -198,6 +199,30 @@ export default function App() {
     queue.current = run.then(() => {});
     return run;
   }
+  async function mutateReview(name: string, args: Record<string, unknown>) {
+    if (name !== "apply_approved_edit") return mutate(name, args);
+    const controller = editorSave.current;
+    try {
+      if (dirty && !controller) throw new Error("Aguarde o salvamento antes de aplicar a alteração.");
+      if (controller) await controller.flush();
+      await queue.current;
+      return await mutate(name, args);
+    } finally { controller?.release(); }
+  }
+  async function compareProposal(p: Proposal) {
+    const controller = editorSave.current;
+    try {
+      if (dirty && !controller) throw new Error("Aguarde o salvamento antes de comparar.");
+      if (controller) await controller.flush();
+      await queue.current;
+      setChapterId(p.chapterId);
+      setComparisonId(p.id);
+      setCommentId(p.commentId || "");
+      setCommentPanel(Boolean(p.commentId) && !matchMedia("(max-width: 900px)").matches);
+      setPage("document");
+    } catch (error) { setError((error as Error).message); }
+    finally { controller?.release(); }
+  }
   function navigate(id: string, targetCommentId?: string) {
     if (dirty) {
       setError(
@@ -205,6 +230,7 @@ export default function App() {
       );
       return;
     }
+    setComparisonId("");
     setCommentOpen(false);
     setChapterId(id);
     setPage("document");
@@ -217,6 +243,7 @@ export default function App() {
       setError("Aguarde o salvamento antes de navegar.");
       return;
     }
+    setComparisonId("");
     setNoteCompose(false);
     setCommentOpen(false);
     setPage(p);
@@ -231,6 +258,7 @@ export default function App() {
     );
   const chapter = state.chapters.find((c) => c.id === chapterId),
     chapterComments = state.comments.filter((c) => c.chapterId === chapterId);
+  const comparison = state.proposals.find(p => p.id === comparisonId && p.chapterId === chapterId);
   const panelChapter = state.chapters.find((c) => c.id === panelChapterId);
   const closeWelcome = () => {
     localStorage.setItem("laura-welcome", "1");
@@ -382,6 +410,9 @@ export default function App() {
                 }
               >
                 <section className="document">
+                  {comparison ? (
+                    <DocumentComparison p={comparison} title={chapter.title} mutate={mutateReview} onClose={() => setComparisonId("")} />
+                  ) : <>
                   <Suspense
                     fallback={<p className="notice">Abrindo documento…</p>}
                   >
@@ -507,6 +538,7 @@ export default function App() {
                       <MoreHorizontal size={18} />
                     </button>
                   </div>
+                  </>}
                 </section>
                 <CommentSidebar open={commentPanel}>
                   <button
@@ -519,10 +551,11 @@ export default function App() {
                   <CommentsPanel
                     key={chapter.id + commentId + searchNavigation}
                     state={state}
-                    mutate={mutate}
+                    mutate={mutateReview}
                     chapterId={chapter.id}
                     selectedId={commentId}
-                    visibleAnchorIds={visibleCommentAnchors.chapterId === chapter.id ? visibleCommentAnchors.ids : []}
+                    onCompare={compareProposal}
+                    visibleAnchorIds={!comparisonId && visibleCommentAnchors.chapterId === chapter.id ? visibleCommentAnchors.ids : []}
                     onNavigate={navigate}
                   />
                 </CommentSidebar>
@@ -569,8 +602,9 @@ export default function App() {
           {page === "comments" && (
             <CommentsPanel
               state={state}
-              mutate={mutate}
+              mutate={mutateReview}
               onNavigate={navigate}
+              onCompare={compareProposal}
             />
           )}{" "}
           {page === "history" && (
@@ -627,7 +661,7 @@ export default function App() {
                   .slice()
                   .reverse()
                   .map((p) => (
-                    <ProposalDetail key={p.id} p={p} mutate={mutate} />
+                    <ProposalDetail key={p.id} p={p} mutate={mutateReview} onCompare={compareProposal} />
                   ))
               ) : (
                 <Empty

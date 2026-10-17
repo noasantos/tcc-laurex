@@ -1,0 +1,267 @@
+.comment-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.comment-heading .comment-summary {
+  flex: 1;
+  min-width: 0;
+}
+.comment-complete.text-button {
+  flex-shrink: 0;
+  margin-top: 10px;
+  gap: 5px;
+  font-size: 11px;
+  padding: 5px 2px;
+}
+.comment-changes {
+  margin: 14px 0 14px 43px;
+  min-width: 0;
+}
+.comment-change {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+.comment-change > summary {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.comment-change > summary > span {
+  color: var(--muted);
+  font-size: 10px;
+  margin-left: 8px;
+}
+.comment-change .proposal {
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+}
+.comment-change .proposal strong {
+  font-size: 12px;
+}
+.comment-change .proposal .row-between {
+  align-items: flex-start;
+  gap: 8px;
+}
+.comment-change .proposal small {
+  font-size: 10px;
+}
+.comment-change .actions {
+  gap: 8px;
+}
+.comment-change .actions button {
+  font-size: 11px;
+  padding: 6px 8px;
+  min-height: 28px;
+}
+.change-comparison {
+  margin: 14px 0;
+  min-width: 0;
+  font-size: 12px;
+}
+.comparison-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+.comparison-controls > div {
+  display: flex;
+  gap: 12px;
+}
+.comparison-controls .text-button {
+  font-size: 10px;
+  padding: 4px 0;
+}
+.comparison-labels,
+.comparison-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.comparison-labels {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.comparison-labels > span {
+  padding: 0 12px;
+}
+.comparison-labels small {
+  font-size: 9px;
+  margin-left: 8px;
+}
+.comparison-line > div {
+  display: flex;
+  min-width: 0;
+  padding: 7px 10px;
+  line-height: 1.8;
+  border-right: 1px solid var(--line);
+}
+.comparison-line > div:last-child {
+  border-right: 0;
+}
+.diff-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1;
+}
+.diff-number {
+  width: 22px;
+  flex-shrink: 0;
+  font-size: 9px;
+  color: var(--muted);
+  user-select: none;
+}
+.diff-sign {
+  width: 14px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.comparison-line .removed {
+  background: light-dark(#fff3f2, #301e21);
+}
+.comparison-line .added {
+  background: light-dark(#eff9f1, #192b22);
+}
+.comparison-line del {
+  background: light-dark(#ffd9d5, #623139);
+  text-decoration: none;
+}
+.comparison-line ins {
+  background: light-dark(#cdeed5, #28523a);
+  text-decoration: none;
+}
+.comparison-omission {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 10px;
+  padding: 6px;
+  min-height: 28px;
+}
+.is-source .diff-content {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+}
+.comparison-note {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.is-unified .comparison-line {
+  display: block;
+}
+.is-unified .comparison-line.unchanged > div:first-child {
+  display: none;
+}
+.is-unified .comparison-line > div {
+  border: 0;
+}
+.is-unified .comparison-line > div:has(.diff-content:empty) {
+  display: none;
+}
+.document-comparison {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.document-comparison-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.document-comparison-body {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 24px;
+  flex: 1;
+}
+.document-comparison-body > .proposal {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+.document-comparison-body h2 {
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+.document-comparison-header .text-button {
+  font-size: 11px;
+}
+.comment-change .comparison-line {
+  display: block;
+}
+.comment-change .comparison-line.unchanged > div:first-child {
+  display: none;
+}
+.comment-change .diff-number {
+  display: none;
+}
+.comment-change .comparison-labels {
+  display: none;
+}
+.comment-change .comparison-line > div:has(.diff-content:empty) {
+  display: none;
+}
+@media (max-width: 760px) {
+  .comparison-line {
+    display: block;
+  }
+  .comparison-line.unchanged > div:first-child {
+    display: none;
+  }
+  .comparison-labels small {
+    display: none;
+  }
+  .comment-changes {
+    margin-left: 0;
+  }
+  .document-comparison-body {
+    padding: 16px;
+  }
+  .comparison-line > div:has(.diff-content:empty) {
+    display: none;
+  }
+}
+.context-panel .comment-changes {
+  margin-left: 0;
+}
+.comment-heading .comment-summary {
+  width: auto;
+  margin-right: 0;
+}
+.comment-change .proposal strong,
+.document-comparison .proposal strong {
+  overflow-wrap: anywhere;
+}
+.comment-change[open] > .proposal {
+  animation: comparison-enter 160ms ease-out;
+}
+@keyframes comparison-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .comment-change[open] > .proposal {
+    animation: none;
+  }
+}

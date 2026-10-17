@@ -35,6 +35,7 @@ export type Comment = {
   };
   status: "open" | "resolved";
   author?: string;
+  /** Legacy display metadata; status is authoritative. New writes use open/resolved only. */
   reviewState?: "open" | "analyzing" | "proposed" | "resolved" | "reopened";
   history?: {
     at: string;

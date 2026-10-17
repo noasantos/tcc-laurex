@@ -51,3 +51,12 @@ See [OPERATING_MODEL.md](OPERATING_MODEL.md). Runtime tools can restart the web 
 ## Referências copiadas de comentários
 
 No documento ou na lateral, use a ação de copiar a referência `C-xxxxxxxx` e cole o pedido na conversa do TCC. O pedido identifica a ferramenta `get_comment_context` e o ID exato. A consulta retorna projeto, capítulo, revisões, seleção original, localização/trecho atual quando recuperável, respostas, histórico e propostas. Referências curtas também são aceitas diretamente; colisões são rejeitadas e exigem o ID completo. Não presuma que o trecho ainda existe: verifique `anchorResolution` e `currentExcerpt`. A cópia não ativa nem configura uma conexão MCP ausente.
+
+
+### Revisar um comentário com antes e depois
+
+Use `get_comment_context` e então `propose_comment_edit` com `commentId`, `chapterId`, `chapterRevision`, `expectedRevision`, `afterLatex` e `reason`. Essa ferramenta exige o comentário; o servidor captura o antes diretamente do documento atual. Não envie um antes fabricado. O depois deve conter o fonte completo revisado do capítulo. A proposta não altera o texto até a aprovação local e a aplicação de `apply_approved_edit`.
+
+`get_comment_context` / `get_comment_history` devolvem as propostas completas vinculadas, com snapshots antes/depois, estado, datas, versão aplicada e operação. O histórico do comentário registra a proposta e sua aplicação. Aplicar, rejeitar ou responder não conclui o comentário: só `resolve_comment` (decisão explícita) e `reopen_comment` mudam entre `open` e `resolved`. `set_comment_state` aceita somente esses dois valores; metadados antigos de “análise” são preservados em backups, mas não representam um terceiro estado.
+
+Na interface, **Concluir** e **Reabrir** ficam no cabeçalho do comentário. **Antes e depois** abre uma comparação independente das respostas; **Ver no documento** amplia a comparação em uma área somente leitura, com contexto recolhido e opção de fonte LaTeX. São snapshots históricos, não uma promessa de que o documento atual ainda corresponda à proposta.

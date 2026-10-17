@@ -52,7 +52,7 @@ export function CommentHover({
           <PopoverTitle>
             {comment.author || "Laura"}{" "}
             <span>
-              {comment.status === "resolved" ? "Resolvido" : "Comentário"}
+              {comment.status === "resolved" ? "Concluído" : "Em aberto"}
             </span>
           </PopoverTitle>
         </PopoverHeader>

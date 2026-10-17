@@ -9,16 +9,27 @@ import {
   ArrowUpRight,
   CheckCircle2,
   RotateCcw,
+  X,
 } from "lucide-react";
 import type { State, Comment, Proposal } from "../../server/types";
-import { plain } from "../../server/types";
+import { ChangeComparison } from "./ChangeComparison";
 import { resolveAnchor } from "../../server/anchors";
-import { Diff, Empty, date } from "./Primitives";
+import { Empty, date } from "./Primitives";
 export type Mutate = (
   name: string,
   args: Record<string, unknown>,
 ) => Promise<any>;
-export function ProposalDetail({ p, mutate }: { p: Proposal; mutate: Mutate }) {
+export function ProposalDetail({
+  p,
+  mutate,
+  onCompare,
+  compact = false,
+}: {
+  p: Proposal;
+  mutate: Mutate;
+  onCompare?: (p: Proposal) => void;
+  compact?: boolean;
+}) {
   return (
     <div className="proposal">
       <div className="row-between">
@@ -37,22 +48,21 @@ export function ProposalDetail({ p, mutate }: { p: Proposal; mutate: Mutate }) {
       </div>
       <small>
         Proposta em {date(p.createdAt)}
+        {` · documento na revisão ${p.baseChapterRevision}`}
         {p.appliedVersion ? ` · versão ${p.appliedVersion}` : ""}
         {p.operationId ? ` · operação ${p.operationId.slice(0, 8)}` : ""}
       </small>
       {p.approvedAt && <small>Aprovada em {date(p.approvedAt)}</small>}
       {p.appliedAt && <small>Aplicada em {date(p.appliedAt)}</small>}
       {p.rejectedAt && <small>Rejeitada em {date(p.rejectedAt)}</small>}
-      <Diff before={p.before} after={p.after} />
-      {p.afterLatex !== undefined && (
-        <details className="source-diff">
-          <summary>Comparar fonte LaTeX</summary>
-          <Diff
-            before={p.beforeLatex ?? plain(p.before)}
-            after={p.afterLatex}
-          />
-        </details>
-      )}
+      <ChangeComparison proposal={p} compact={compact} />
+      <div className="actions">
+        {onCompare && (
+          <button className="text-button" onClick={() => onCompare(p)}>
+            Ver no documento <ArrowUpRight size={14} />
+          </button>
+        )}
+      </div>
       <div className="actions">
         {p.status === "pending" && (
           <button
@@ -81,6 +91,37 @@ export function ProposalDetail({ p, mutate }: { p: Proposal; mutate: Mutate }) {
     </div>
   );
 }
+export function DocumentComparison({
+  p,
+  title,
+  mutate,
+  onClose,
+}: {
+  p: Proposal;
+  title: string;
+  mutate: Mutate;
+  onClose: () => void;
+}) {
+  return (
+    <div className="document-comparison">
+      <div className="document-comparison-header">
+        <span>Comparação · {title}</span>
+        <button className="text-button" onClick={onClose}>
+          Voltar ao documento <X size={14} />
+        </button>
+      </div>
+      <div className="document-comparison-body">
+        <h2>Antes e depois</h2>
+        <p className="comparison-note">
+          Versões preservadas desta alteração. A comparação é somente leitura e
+          pode diferir do documento atual. Aplicar uma alteração mantém o
+          comentário em aberto.
+        </p>
+        <ProposalDetail key={p.id} p={p} mutate={mutate} />
+      </div>
+    </div>
+  );
+}
 export function anchorStatus(c: Comment, s: State) {
   const chapter = s.chapters.find((x) => x.id === c.chapterId);
   if (!chapter) return "Capítulo não localizado";
@@ -101,23 +142,24 @@ export function CommentsPanel({
   selectedId,
   visibleAnchorIds = [],
   onNavigate,
+  onCompare,
 }: {
   state: State;
   mutate: Mutate;
   chapterId?: string;
   selectedId?: string;
   visibleAnchorIds?: string[];
+  onCompare?: (p: Proposal) => void;
   onNavigate: (id: string, commentId?: string) => void;
 }) {
   const [author, setAuthor] = useState(""),
     [since, setSince] = useState("");
   const [filter, setFilter] = useState(selectedId ? "all" : "open"),
     [search, setSearch] = useState(""),
-    [expanded, setExpanded] = useState(selectedId || ""),
+    [expanded, setExpanded] = useState(""),
     [chapterFilter, setChapterFilter] = useState(chapterId || "");
   useEffect(() => {
     if (selectedId) {
-      setExpanded(selectedId);
       const item = document.getElementById("comment-" + selectedId);
       const pane = item?.closest<HTMLElement>(".review-panel");
       if (item && pane) {
@@ -131,9 +173,7 @@ export function CommentsPanel({
   const comments = state.comments.filter(
     (c) =>
       (!chapterFilter || c.chapterId === chapterFilter) &&
-      (filter === "all" ||
-        (filter === "open" && c.status === "open") ||
-        (c.reviewState || c.status) === filter) &&
+      (filter === "all" || c.status === filter) &&
       (!author || (c.author || "Laura") === author) &&
       (!since || c.createdAt.slice(0, 10) >= since) &&
       (JSON.stringify(c) + commentReference(c.id))
@@ -156,10 +196,7 @@ export function CommentsPanel({
           onValueChange={(value) => setFilter(value)}
         >
           <SelectOption value="open">Em aberto</SelectOption>
-          <SelectOption value="resolved">Resolvidos</SelectOption>
-          <SelectOption value="analyzing">Em análise</SelectOption>
-          <SelectOption value="proposed">Alteração proposta</SelectOption>
-          <SelectOption value="reopened">Reabertos</SelectOption>
+          <SelectOption value="resolved">Concluídos</SelectOption>
           <SelectOption value="all">Todos</SelectOption>
         </Select>
         {!chapterId && (
@@ -220,45 +257,52 @@ export function CommentsPanel({
             id={"comment-" + c.id}
             className={"comment-item " + (open ? "expanded" : "")}
           >
-            <button
-              className="comment-summary"
-              onClick={() => setExpanded(open ? "" : c.id)}
-              aria-expanded={open}
-              aria-label={
-                (open
-                  ? "Recolher detalhes do comentário"
-                  : "Abrir detalhes do comentário") +
-                " de " +
-                (c.author || "Laura")
-              }
-            >
-              <span className="comment-avatar">
-                {(c.author || "Laura").slice(0, 1)}
-              </span>
-              <div>
-                <small>
-                  {state.chapters.find((x) => x.id === c.chapterId)?.title} ·{" "}
-                  {date(c.createdAt)}
-                </small>
-
-                <span className="subtle">
-                  {c.reviewState === "reopened"
-                    ? "Reaberto"
-                    : c.reviewState === "analyzing"
-                      ? "Em análise"
-                      : c.status === "resolved"
-                        ? "Resolvido"
-                        : proposals.some((p) => p.status === "pending")
-                          ? "Alteração proposta"
-                          : c.replies.length
-                            ? "Em análise"
-                            : "Aberto"}
-                  {proposals.length
-                    ? ` · ${proposals.length} alteração(ões) associada(s)`
-                    : ""}
+            <div className="comment-heading">
+              <button
+                className="comment-summary"
+                onClick={() => setExpanded(open ? "" : c.id)}
+                aria-expanded={open}
+                aria-label={
+                  (open
+                    ? "Recolher detalhes do comentário"
+                    : "Abrir detalhes do comentário") +
+                  " de " +
+                  (c.author || "Laura")
+                }
+              >
+                <span className="comment-avatar">
+                  {(c.author || "Laura").slice(0, 1)}
                 </span>
-              </div>
-            </button>
+                <div>
+                  <small>
+                    {state.chapters.find((x) => x.id === c.chapterId)?.title} ·{" "}
+                    {date(c.createdAt)}
+                  </small>
+
+                  <span className="subtle">
+                    {c.status === "resolved" ? "Concluído" : "Em aberto"}
+                  </span>
+                </div>
+              </button>
+              <button
+                className="comment-complete text-button"
+                onClick={() =>
+                  mutate(
+                    c.status === "resolved"
+                      ? "reopen_comment"
+                      : "resolve_comment",
+                    { commentId: c.id },
+                  )
+                }
+              >
+                {c.status === "resolved" ? (
+                  <RotateCcw size={14} />
+                ) : (
+                  <CheckCircle2 size={14} />
+                )}
+                {c.status === "resolved" ? "Reabrir" : "Concluir"}
+              </button>
+            </div>
             <div className="comment-context">
               {c.quote ? (
                 <CommentText text={c.quote} quote limit={220} />
@@ -273,7 +317,11 @@ export function CommentsPanel({
                 <button
                   className="text-button"
                   disabled={alreadyVisible}
-                  title={alreadyVisible ? "Trecho já visível no documento" : undefined}
+                  title={
+                    alreadyVisible
+                      ? "Trecho já visível no documento"
+                      : undefined
+                  }
                   onClick={() => onNavigate(c.chapterId, c.id)}
                 >
                   {linked ? "Ir ao trecho" : "Abrir capítulo"}{" "}
@@ -292,11 +340,40 @@ export function CommentsPanel({
               </div>
               {anchor.status === "orphan" && (
                 <p className="anchor-state">
-                  O trecho mudou ou não foi localizado com segurança. A seleção
-                  original foi mantida acima.
+                  {proposals.some((p) => p.status === "applied")
+                    ? "O texto foi revisado. O trecho original está preservado acima; veja a alteração em Antes e depois."
+                    : "O trecho mudou ou não foi localizado com segurança. A seleção original foi mantida acima."}
                 </p>
               )}
             </div>
+            {proposals.length > 0 && (
+              <div className="comment-changes">
+                {proposals.map((p) => (
+                  <details key={p.id} className="comment-change">
+                    <summary>
+                      Antes e depois{" "}
+                      <span>
+                        {
+                          {
+                            pending: "Proposta",
+                            approved: "Aprovada",
+                            applied: "Aplicada",
+                            rejected: "Rejeitada",
+                            reverted: "Revertida",
+                          }[p.status]
+                        }
+                      </span>
+                    </summary>
+                    <ProposalDetail
+                      p={p}
+                      mutate={mutate}
+                      onCompare={onCompare}
+                      compact
+                    />
+                  </details>
+                ))}
+              </div>
+            )}
             {open && (
               <div className="comment-detail">
                 {anchor.status !== "orphan" && (
@@ -329,50 +406,14 @@ export function CommentsPanel({
                   />
                   <div className="actions">
                     <button type="submit">Responder</button>
-                    {c.status !== "resolved" && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          mutate("set_comment_state", {
-                            commentId: c.id,
-                            state: "analyzing",
-                          })
-                        }
-                      >
-                        Em análise
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        mutate(
-                          c.status === "resolved"
-                            ? "reopen_comment"
-                            : "resolve_comment",
-                          { commentId: c.id },
-                        )
-                      }
-                    >
-                      {c.status === "resolved" ? (
-                        <RotateCcw size={14} />
-                      ) : (
-                        <CheckCircle2 size={14} />
-                      )}{" "}
-                      {c.status === "resolved"
-                        ? "Reabrir"
-                        : "Resolver explicitamente"}
-                    </button>
                   </div>
                 </form>
                 {c.status === "resolved" &&
                   !proposals.some((p) => p.status === "applied") && (
                     <p className="notice">
-                      Resolvido sem alteração textual associada.
+                      Concluído sem alteração textual associada.
                     </p>
                   )}
-                {proposals.map((p) => (
-                  <ProposalDetail key={p.id} p={p} mutate={mutate} />
-                ))}
               </div>
             )}
           </article>
