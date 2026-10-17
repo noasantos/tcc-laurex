@@ -108,8 +108,13 @@
 .laurex-tour .driver-popover-arrow {
   border-color: var(--surface);
 }
-.navigation-workspace[data-tour-open="true"] .navigation-panel {
-  transition: none !important;
+/* Match the navigation's important base layer so the initial target is never
+   measured while the sidebar is still sliding out of the viewport. */
+@layer base {
+  .navigation-workspace[data-tour-open="true"] .navigation-panel {
+    transition: none !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
 }
 .navigation-workspace[data-tour-open="true"] {
   --sidebar-width: 234px;

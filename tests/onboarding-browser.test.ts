@@ -416,6 +416,8 @@ test(
         .click();
       await page.getByRole("button", { name: "Fazer tour novamente" }).click();
       await progress(page, 1);
+      const navigationBounds = await page.locator('[data-tour="navigation"]').boundingBox();
+      assert.ok(navigationBounds && navigationBounds.x >= 0 && navigationBounds.width >= 230 && navigationBounds.x + navigationBounds.width <= 1280, "the sidebar target is fully on screen before highlighting");
       await page.screenshot({ path: "/tmp/laurex-tour-light.png" });
       await page.keyboard.press("Escape");
 

@@ -265,8 +265,12 @@ export function GuidedTour({
             return;
           }
           const el = document.querySelector(`[data-tour="${target}"]`);
+          const navigation = el?.closest<HTMLElement>('[data-tour="navigation"]');
+          const navigationBounds = navigation?.getBoundingClientRect();
+          const navigationReady = !navigationBounds ||
+            (navigationBounds.left >= 0 && navigationBounds.right <= innerWidth);
           if (
-            visible(el) &&
+            visible(el) && navigationReady &&
             (target !== "editor" || el.querySelector('[data-hint="modes"]'))
           ) {
             resolve();
