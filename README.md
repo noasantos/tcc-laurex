@@ -2,6 +2,10 @@
 
 Um ambiente local para organizar e revisar o TCC com o ChatGPT como colaborador de escrita. Sem chat próprio, hospedagem, banco remoto ou API de geração de texto.
 
+## Começar pelo Codex
+
+Abra uma conversa no **Codex local**, copie [este prompt de instalação](https://raw.githubusercontent.com/noasantos/tcc-laurex/main/docs/SETUP_PROMPT.txt) e envie. O assistente com acesso ao terminal prepara o aplicativo e o MCP no computador dela. O repositório é público: não precisa de conta, convite ou token do GitHub para baixar. Preserve e retome essa conversa para trabalhar no TCC.
+
 ## Abrir pela primeira vez
 
 1. Baixe este repositório como ZIP e extraia a pasta, ou clone-o.
