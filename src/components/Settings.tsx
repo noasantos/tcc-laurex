@@ -1,3 +1,6 @@
+import "./data-location.css";
+import { Button } from "./ui/button";
+import { FolderInput, ChevronDown } from "lucide-react";
 import repairPrompt from "../../docs/MCP_REPAIR_PROMPT.txt?raw";
 import { Copy, Check } from "lucide-react";
 import { ImportDropzone, type ImportResult } from "./ImportDropzone";
@@ -134,7 +137,10 @@ export function Settings({
             key={id}
             className={tab === id ? "selected" : ""}
             aria-pressed={tab === id}
-            onClick={() => { setTab(id); onTabChange?.(id); }}
+            onClick={() => {
+              setTab(id);
+              onTabChange?.(id);
+            }}
           >
             {label}
           </button>
@@ -236,38 +242,54 @@ export function Settings({
         <p className="data-path">
           Dados locais: {diagnostic?.root || "Consultando…"}
         </p>
-        <details>
-          <summary>Alterar pasta dos dados</summary>
-          <p className="subtle">
-            Use uma pasta nova ou vazia, fora da aplicação. O estado atual é
-            preservado, o backup é testado e você reinicia para utilizar a nova
-            pasta.
-          </p>
-          <input
-            aria-label="Nova pasta dos dados"
-            placeholder="Caminho completo da nova pasta"
-            value={directory}
-            onChange={(e) => setDirectory(e.target.value)}
-          />
-          <button
-            disabled={!directory || busy}
-            onClick={() =>
-              doWork(async () => {
-                const r = await request("location", {
-                  expectedRevision: state.revision,
-                  directory,
-                  confirmed: true,
-                });
-                setMessage(
-                  r.restartRequired
-                    ? "Pasta alterada com segurança. Encerre e abra novamente o Laura Workspace para continuar. Os dados antigos foram preservados."
-                    : "A pasta selecionada já está em uso.",
-                );
-              })
-            }
-          >
-            Copiar projeto e usar esta pasta
-          </button>
+        <details className="data-location">
+          <summary>
+            <FolderInput size={16} aria-hidden="true" />
+            <span>Alterar pasta dos dados</span>
+            <ChevronDown
+              size={14}
+              className="data-location-chevron"
+              aria-hidden="true"
+            />
+          </summary>
+          <div className="data-location-content">
+            <p>Use uma pasta nova ou vazia, fora da aplicação.</p>
+            <Field label="Nova pasta dos dados">
+              <input
+                placeholder="Cole o caminho completo da pasta"
+                value={directory}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(e) => setDirectory(e.target.value)}
+              />
+            </Field>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!directory.trim() || busy}
+              onClick={() =>
+                doWork(async () => {
+                  const r = await request("location", {
+                    expectedRevision: state.revision,
+                    directory,
+                    confirmed: true,
+                  });
+                  setMessage(
+                    r.restartRequired
+                      ? "Pasta alterada com segurança. Encerre e abra novamente o Laura Workspace para continuar. Os dados antigos foram preservados."
+                      : "A pasta selecionada já está em uso.",
+                  );
+                })
+              }
+            >
+              <FolderInput size={14} aria-hidden="true" />
+              Copiar projeto para esta pasta
+            </Button>
+            <p className="data-location-hint">
+              Os dados atuais serão preservados e a cópia será verificada.
+              Depois, reinicie o app para usar a nova pasta.
+            </p>
+          </div>
         </details>
         <Field label="Retenção dos backups automáticos (dias; 0 mantém todos)">
           <input

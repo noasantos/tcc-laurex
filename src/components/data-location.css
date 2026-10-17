@@ -1,0 +1,76 @@
+.settings-section > .data-location {
+  max-width: 500px;
+  margin: 24px 0 30px;
+}
+.data-location > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  list-style: none;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.data-location > summary::-webkit-details-marker {
+  display: none;
+}
+.data-location > summary > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.data-location .data-location-chevron {
+  margin-left: auto;
+  transition: transform 160ms ease;
+}
+.data-location[open] .data-location-chevron {
+  transform: rotate(180deg);
+}
+.data-location > summary:hover {
+  color: var(--muted);
+}
+.data-location > summary:focus-visible {
+  outline: 2px solid var(--muted);
+  outline-offset: 4px;
+}
+.data-location-content {
+  padding-top: 12px;
+}
+.data-location-content > p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 0 0 16px;
+}
+.settings-section .data-location-content .field {
+  max-width: none;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.data-location-content .field > span {
+  font-size: 11px;
+  font-weight: 500;
+}
+.data-location-content input {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  font-size: 12px;
+}
+.data-location-content > button {
+  max-width: 100%;
+  min-height: 32px;
+  font-size: 12px;
+}
+.data-location-content > .data-location-hint {
+  margin: 12px 0 0;
+  font-size: 11px;
+  line-height: 1.65;
+}
+@media (prefers-reduced-motion: reduce) {
+  .data-location .data-location-chevron {
+    transition: none;
+  }
+}
