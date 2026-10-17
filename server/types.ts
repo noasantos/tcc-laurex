@@ -9,6 +9,8 @@ export type Chapter = {
   id: string;
   title: string;
   status: string;
+  /** Durable latch: deleting content cannot make a started chapter planned again. */
+  started?: boolean;
   parentId: string | null;
   plan: string;
   content: Doc;

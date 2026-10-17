@@ -3,11 +3,12 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { Store, atomic } from "./store";
 import type { State } from "./types";
+import { hasDocumentContent } from "./chapter-status";
 import { validateDoc } from "./documents";
 const uuid=z.uuid();const str=z.string();const revision=z.number().int().positive();
 const stateSchema=z.object({
  id:uuid,name:str,revision,
- chapters:z.array(z.object({id:uuid,title:str,status:z.enum(['Planejado','Em desenvolvimento','Em revisão','Concluído']),parentId:uuid.nullable(),plan:str,content:z.json(),revision})),
+ chapters:z.array(z.object({id:uuid,title:str,status:z.enum(['Planejado','Em desenvolvimento','Em revisão','Concluído']),started:z.boolean().optional(),parentId:uuid.nullable(),plan:str,content:z.json(),revision})),
  comments:z.array(z.object({id:uuid,chapterId:uuid,body:str,quote:str,anchor:z.object({blockId:str.optional(),blockIds:z.array(str).optional(),prefix:str.optional(),suffix:str.optional(),scope:str.optional()}),status:z.enum(['open','resolved']),author:str.optional(),reviewState:z.enum(['open','analyzing','proposed','resolved','reopened']).optional(),history:z.array(z.object({at:str,action:str,origin:str,version:revision,proposalId:uuid.optional()})).optional(),replies:z.array(z.object({body:str,at:str,origin:str})),createdAt:str,resolvedAt:str.optional()})),
  notes:z.array(z.object({id:uuid,title:str,content:str,category:str,chapterId:uuid.nullable(),state:str,origin:str,createdAt:str,updatedAt:str})),
  references:z.array(z.object({id:uuid,key:str,title:str,authors:str,year:str,publication:str,doi:str,url:str,type:str,note:str,bibtex:str.optional(),localPdfId:uuid.optional(),verified:z.boolean().optional(),origin:str.optional(),createdAt:str.optional(),updatedAt:str.optional(),evidenceUrl:str.optional(),evidenceNote:str.optional()})),
@@ -169,6 +170,7 @@ export async function verifyBackupByRestore(file: string) {
         JSON.stringify(
           key === "chapters"
             ? restored.chapters.map(({ revision, ...c }) => {
+                if (payload.state.chapters.find((old: any) => old.id === c.id)?.started === undefined) delete c.started;
                 if (payload.state.chapters.find((old: any) => old.id === c.id)?.latex === undefined) {
                   delete c.latex; delete c.latexRevision; delete c.latexWarnings; delete c.latexIssue;
                 }
@@ -179,6 +181,7 @@ export async function verifyBackupByRestore(file: string) {
         JSON.stringify(
           key === "chapters"
             ? payload.state.chapters.map(({ revision, ...c }: any) => {
+                if (c.status === "Planejado" && (c.started || hasDocumentContent(c.content))) c.status = "Em desenvolvimento";
                 if (c.latex === undefined) {
                   delete c.latexRevision; delete c.latexWarnings; delete c.latexIssue;
                 }

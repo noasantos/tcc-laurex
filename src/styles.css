@@ -3949,3 +3949,9 @@ body,
     gap: 12px;
   }
 }
+
+.chapter-status-control { position: relative; max-width: 380px; }
+.chapter-status-warning { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
+.chapter-status-confirm { width: min(370px, calc(100vw - 24px)); padding: 18px; }
+.chapter-status-confirm p { font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
+.chapter-status-confirm .actions { justify-content: flex-end; gap: 8px; }

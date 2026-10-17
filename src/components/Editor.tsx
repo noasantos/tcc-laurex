@@ -143,6 +143,7 @@ export function DocumentEditor({
   focusCommentId = "",
   focusRequest = 0,
   onSave,
+  saveController,
   onComment,
   onOpenComment,
   onCitation,
@@ -151,6 +152,7 @@ export function DocumentEditor({
   dirtyChanged,
   onInsert,
 }: {
+  saveController: React.MutableRefObject<{ flush: () => Promise<void>; release: () => void } | null>;
   chapter: Chapter;
   comments: Comment[];
   focusCommentId?: string;
@@ -226,6 +228,9 @@ export function DocumentEditor({
   const chapterId = chapter.id;
   const baseRevision = useRef(chapter.revision);
   const saving = useRef(Promise.resolve());
+  const saveFailure = useRef<unknown>(null);
+  const statusLocked = useRef(false);
+  const [statusLock, setStatusLock] = useState(false);
   const editor = useEditor(
     {
       extensions: [
@@ -457,7 +462,7 @@ export function DocumentEditor({
           draftAvailable.current = false;
         }
         if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => void persist(editor.getJSON()), 800);
+        timer.current = setTimeout(() => { timer.current = null; void persist(editor.getJSON()).catch(() => {}); }, 800);
       },
     },
     [chapterId],
@@ -467,6 +472,7 @@ export function DocumentEditor({
       .catch(() => {})
       .then(async () => {
         try {
+          if (saveFailure.current) throw saveFailure.current;
           baseRevision.current = await saveRef.current(
             content,
             baseRevision.current,
@@ -481,12 +487,14 @@ export function DocumentEditor({
             localStorage.removeItem("laura-draft-" + chapterId);
             setState("Salvo");
           }
-        } catch {
+        } catch (error) {
+          saveFailure.current = error;
           setState(
             draftAvailable.current
               ? "Falha ao salvar · rascunho preservado"
               : "Falha ao salvar · mantenha esta janela aberta",
           );
+          throw error;
         }
       });
     await saving.current;
@@ -498,11 +506,35 @@ export function DocumentEditor({
         tick((v) => v + 1);
         lastSaved.current = JSON.stringify(chapter.content);
       }
-      editor.setEditable(!chapter.latexWarnings?.length, false);
+      editor.setEditable(!statusLocked.current && !chapter.latexWarnings?.length, false);
       baseRevision.current = chapter.revision;
     }
     editor?.view.dispatch(editor.state.tr.setMeta("comments", true));
-  }, [chapter.content, comments, editor]);
+  }, [chapter.content, chapter.revision, comments, editor]);
+  useEffect(() => {
+    if (!editor) return;
+    const controller = {
+      async flush() {
+        statusLocked.current = true;
+        setStatusLock(true);
+        editor.setEditable(false, false);
+        const pending = timer.current !== null;
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = null;
+        await saving.current;
+        if (saveFailure.current) throw saveFailure.current;
+        if (dirty.current && pending) await persist(editor.getJSON());
+        if (dirty.current) throw new Error("O documento ainda não foi salvo. Preserve o rascunho antes de alterar o status.");
+      },
+      release() {
+        statusLocked.current = false;
+        setStatusLock(false);
+        editor.setEditable(!chapter.latexWarnings?.length, false);
+      },
+    };
+    saveController.current = controller;
+    return () => { if (saveController.current === controller) saveController.current = null; };
+  }, [editor, chapter.latexWarnings, saveController]);
   useEffect(() => {
     const listener = (e: BeforeUnloadEvent) => {
       if (dirty.current) {
@@ -619,7 +651,7 @@ export function DocumentEditor({
     editor.commands.blur();
   };
   return (
-    <>
+    <div style={{ display: "contents" }} inert={statusLock}>
       {hovered && comments.find((c) => c.id === hovered.id) && (
         <CommentHover
           comment={comments.find((c) => c.id === hovered.id)!}
@@ -914,6 +946,6 @@ export function DocumentEditor({
         {editor.getText().split(/\s+/).filter(Boolean).length} palavras{" "}
         <span>Conteúdo acadêmico · planejamento guardado separadamente</span>
       </div>
-    </>
+    </div>
   );
 }

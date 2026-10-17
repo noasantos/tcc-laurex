@@ -101,6 +101,11 @@ try {
       anchor: { blockId: read.content.content[0].attrs.id, scope: "selection" },
     })
   ).result;
+  assert.equal(chapter.status, "Em desenvolvimento");
+  await assert.rejects(() => call("update_chapter_metadata", {
+    expectedRevision: revision(), chapterId: chapter.id, chapterRevision: chapter.revision,
+    status: "Concluído", acknowledgeOpenComments: true,
+  }), /confirmação local/);
   const commentContext = await call("get_comment_context", {
     commentId: commentReference(comment.id),
   });
@@ -164,6 +169,8 @@ try {
         unauthorizedApplyBlocked: true,
         approvedApply: true,
         commentNotAutoResolved: true,
+        completionRequiresLocalConfirmation: true,
+        firstContentPromoted: true,
         copiedCommentReference: true,
         nativeLatexReadWrite: true,
         chatgptAccountVerified: false,

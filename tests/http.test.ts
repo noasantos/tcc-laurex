@@ -123,6 +123,18 @@ test("HTTP real: origem, sessão local, autenticação MCP e escrita pelo protoc
       (await (await fetch(url + "/api/state")).json()).notes[0].content,
       "Nota via HTTP autenticado",
     );
+    for (const source of ["Conteúdo importado.", " \n\n"]) {
+      const beforeImport = await (await fetch(url + "/api/state")).json();
+      const response = await fetch(url + "/api/import/latex", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Laura-Token": token },
+        body: JSON.stringify({ expectedRevision: beforeImport.revision, name: "Import status", source }),
+      });
+      assert.equal(response.status, 200);
+      const imported = await response.json();
+      assert.equal(imported.result.status, source.trim() ? "Em desenvolvimento" : "Planejado");
+      assert.equal(imported.revision, beforeImport.revision + 1);
+    }
   } finally {
     await client.close();
     if (child.exitCode === null && child.signalCode === null) {

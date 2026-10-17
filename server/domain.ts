@@ -73,6 +73,7 @@ export const schemas = {
     chapterRevision: rev,
     title: id.optional(),
     status: status.optional(),
+    acknowledgeOpenComments: z.literal(true).optional(),
     content: doc.optional(),
     latex: z.string().max(5_000_000).optional(),
   }),
@@ -381,6 +382,15 @@ export class Domain {
               throw new Error(
                 "Para revisar conteúdo existente, use propose_document_edit; Laura aprova na interface",
               );
+            if (a.status === "Planejado" && (c.started || c.status !== "Planejado"))
+              throw new Error("Este capítulo já foi iniciado e não pode voltar a Planejado.");
+            if (a.acknowledgeOpenComments && (a.status !== "Concluído" || a.content !== undefined || a.latex !== undefined || a.title !== undefined))
+              throw new Error("A confirmação deve alterar somente o status do capítulo.");
+            if (a.status === "Concluído" && c.status !== "Concluído") {
+              const count = s.comments.filter(x => x.chapterId === c.id && x.status === "open").length;
+              if (count && (origin !== "ui" || !a.acknowledgeOpenComments))
+                throw new Error(`Este capítulo tem ${count} comentários sem resolução. A conclusão exige confirmação local de Laura.`);
+            }
             for (const k of ["title", "status", "content"] as const)
               if (a[k] !== undefined) (c as any)[k] = a[k];
             if (a.latex !== undefined && a.content !== undefined) throw new Error("Envie latex ou content, nunca ambos.");

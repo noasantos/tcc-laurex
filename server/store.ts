@@ -17,6 +17,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { State } from "./types";
 import { dirname } from "node:path";
 import { exportLatex } from "./documents";
+import { synchronizeChapterStatus } from "./chapter-status";
 import { synchronizeSources } from "./chapter-source";
 export const defaultDataDirectory = () =>
   resolve(
@@ -106,6 +107,13 @@ export class Store {
         () => {},
       );
     }
+    const statuses = this.get();
+    if (statuses.chapters.some(c => c.started === undefined || (c.status === "Planejado" && c.started))) {
+      this.backup();
+      this.commit(statuses.revision, "normalize_chapter_status", "system", s => {
+        for (const c of s.chapters) c.revision++;
+      });
+    }
     this.materialize(this.get());
   }
   get(): State {
@@ -134,6 +142,7 @@ export class Store {
       const before = structuredClone(s);
       mutate(s, op);
       synchronizeSources(s, before);
+      synchronizeChapterStatus(s, before);
       s.revision++;
       this.db.exec(
         "DELETE FROM proposal_links; DELETE FROM note_links; DELETE FROM comment_links; DELETE FROM chapter_links;",

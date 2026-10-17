@@ -1,4 +1,5 @@
 import { ChapterNavigation } from "./components/ChapterNavigation";
+import { ChapterStatus } from "./components/ChapterStatus";
 import { ChapterCreate } from "./components/ChapterCreate";
 import { NavigationWorkspace } from "./components/NavigationWorkspace";
 import { HeaderSearch } from "./components/HeaderSearch";
@@ -93,6 +94,7 @@ export default function App() {
   );
   const stateRef = useRef<State | null>(null);
   const queue = useRef(Promise.resolve());
+  const editorSave = useRef<{ flush: () => Promise<void>; release: () => void } | null>(null);
   async function refresh() {
     const s = await request<State>("state");
     if (s.revision < (stateRef.current?.revision || 0)) return;
@@ -385,6 +387,7 @@ export default function App() {
                     <DocumentEditor
                       key={chapter.id}
                       chapter={chapter}
+                      saveController={editorSave}
                       comments={chapterComments}
                       focusCommentId={commentId}
                       focusRequest={searchNavigation}
@@ -450,26 +453,23 @@ export default function App() {
                     />
                   </Suspense>
                   <div className="chapter-options">
-                    <Select
-                      aria-label="Status do capítulo"
-                      value={chapter.status}
-                      onValueChange={(value) =>
-                        mutate("update_chapter", {
-                          chapterId: chapter.id,
-                          chapterRevision: chapter.revision,
-                          status: value,
-                        })
-                      }
-                    >
-                      {[
-                        "Planejado",
-                        "Em desenvolvimento",
-                        "Em revisão",
-                        "Concluído",
-                      ].map((x) => (
-                        <SelectOption key={x}>{x}</SelectOption>
-                      ))}
-                    </Select>
+                    <ChapterStatus key={chapter.id} chapter={chapter}
+                      prepare={async () => {
+                        if (!editorSave.current) throw new Error("Aguarde o documento abrir.");
+                        await editorSave.current.flush();
+                        await queue.current;
+                        const current = stateRef.current!;
+                        return { state: current, chapter: current.chapters.find(c => c.id === chapter.id)! };
+                      }}
+                      release={() => editorSave.current?.release()}
+                      apply={(snapshot, status, acknowledged) => mutate("update_chapter", {
+                        expectedRevision: snapshot.state.revision,
+                        chapterId: snapshot.chapter.id,
+                        chapterRevision: snapshot.chapter.revision,
+                        status,
+                        ...(acknowledged ? { acknowledgeOpenComments: true } : {}),
+                      })}
+                    />
                     <button
                       onClick={() => {
                         setPanelChapterId(chapter.id);
