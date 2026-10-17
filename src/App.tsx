@@ -194,7 +194,7 @@ export default function App() {
     queue.current = run.then(() => {});
     return run;
   }
-  function navigate(id: string) {
+  function navigate(id: string, targetCommentId?: string) {
     if (dirty) {
       setError(
         "Aguarde o salvamento antes de mudar de capítulo. Se houver falha, seu rascunho está preservado neste navegador.",
@@ -204,8 +204,9 @@ export default function App() {
     setCommentOpen(false);
     setChapterId(id);
     setPage("document");
-    setCommentPanel(false);
-    setCommentId("");
+    setCommentPanel(Boolean(targetCommentId));
+    setCommentId(targetCommentId || "");
+    if (targetCommentId) setSearchNavigation(n => n + 1);
   }
   function goPage(p: string) {
     if (dirty) {
@@ -434,6 +435,8 @@ export default function App() {
                       key={chapter.id}
                       chapter={chapter}
                       comments={chapterComments}
+                      focusCommentId={commentId}
+                      focusRequest={searchNavigation}
                       onSave={(content, baseRevision) =>
                         mutate("update_chapter", {
                           chapterId: chapter.id,

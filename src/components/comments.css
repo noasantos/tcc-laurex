@@ -1,0 +1,99 @@
+/* A comment reads together with its source; detail controls do not hide the context. */
+.comment-summary > div {
+  min-width: 0;
+  flex: 1;
+}
+.comment-summary small {
+  display: block;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.comment-summary .subtle {
+  display: block;
+  margin-top: 3px;
+}
+.comment-context {
+  padding-left: 43px;
+  min-width: 0;
+}
+.comment-text {
+  min-width: 0;
+  margin: 0 0 12px;
+}
+.comment-text p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.comment-text.is-expanded p {
+  display: block;
+  overflow: visible;
+}
+.comment-excerpt {
+  border-left: 2px solid var(--line);
+  padding-left: 12px;
+  margin-bottom: 14px;
+}
+.comment-excerpt p {
+  -webkit-line-clamp: 2;
+  color: var(--muted);
+  font-size: 12px;
+}
+.comment-text-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.comment-read-more.text-button {
+  padding: 4px 0;
+  min-height: 24px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.comment-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 3px 0 8px;
+}
+.comment-context-actions .text-button {
+  padding: 4px 0;
+  font-size: 11px;
+}
+.comment-chapter-scope {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.comment-target-highlight {
+  background: var(--highlight);
+  box-shadow: 0 2px 0 var(--muted);
+  scroll-margin-block: 24px;
+}
+@media (max-width: 760px) {
+  .comment-context {
+    padding-left: 0;
+  }
+}
+.context-panel .comment-context {
+  padding-left: 0;
+}
+.academic-editor .comment-widget {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  cursor: pointer;
+}
+.academic-editor .comment-widget:focus-visible {
+  outline: 1px solid var(--muted);
+  outline-offset: 3px;
+}

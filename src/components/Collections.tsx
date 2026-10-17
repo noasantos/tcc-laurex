@@ -1,3 +1,4 @@
+import "./notebook.css";
 import { Select, SelectOption } from "./Select";
 import { useState, useRef, useEffect } from "react";
 import {
@@ -43,7 +44,7 @@ function NoteForm({
   const base = useRef(projectRevision);
   return (
     <form
-      className="inline-editor"
+      className="inline-editor note-composer"
       onSubmit={async (e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
@@ -51,43 +52,48 @@ function NoteForm({
           ...(note === "new"
             ? {}
             : { noteId: note.id, expectedRevision: base.current }),
-          title: f.get("title"),
+          title: String(f.get("title") || "").trim() || "Nova ideia",
           content: f.get("content"),
           category: f.get("category"),
         });
         onCancel();
       }}
     >
-      <div className="inline-editor-heading">
-        <strong>{note === "new" ? "Nova ideia" : "Editar ideia"}</strong>
+      <div className="note-composer-title-row">
+        <input
+          className="note-composer-title"
+          aria-label="Título da ideia"
+          name="title"
+          autoFocus
+          maxLength={200}
+          defaultValue={note === "new" ? "" : note.title}
+          placeholder="Nova ideia"
+        />
         <button type="button" className="text-button" onClick={onCancel}>
           Cancelar
         </button>
       </div>
-      <Field label="Sua ideia">
-        <textarea
-          autoFocus
-          required
-          name="content"
-          rows={4}
-          defaultValue={note === "new" ? "" : note.content}
-          placeholder="O que você está pensando?"
-        />
-      </Field>
-      <div className="form-grid">
-        <Field label="Título (opcional)">
-          <input name="title" defaultValue={note === "new" ? "" : note.title} />
-        </Field>
-        <Field label="Tipo">
-          <Select
-            name="category"
-            defaultValue={note === "new" ? "Pensamento" : note.category}
-          >
-            {categories.map((c) => (
-              <SelectOption key={c}>{c}</SelectOption>
-            ))}
-          </Select>
-        </Field>
+      <textarea
+        className="note-composer-content"
+        aria-label="Sua ideia"
+        required
+        name="content"
+        rows={5}
+        defaultValue={note === "new" ? "" : note.content}
+        placeholder="Escreva um pensamento, uma dúvida ou algo para retomar depois…"
+      />
+      <div className="note-composer-meta">
+        <label htmlFor="note-category">Tipo de ideia</label>
+        <Select
+          id="note-category"
+          aria-label="Tipo de ideia"
+          name="category"
+          defaultValue={note === "new" ? "Pensamento" : note.category}
+        >
+          {categories.map((c) => (
+            <SelectOption key={c}>{c}</SelectOption>
+          ))}
+        </Select>
       </div>
       <div className="actions">
         <button className="primary">Guardar ideia</button>
@@ -130,29 +136,33 @@ export function Notebook({
           <h1>Caderno de ideias</h1>
           <p>Pensamentos e decisões, separados do texto acadêmico.</p>
         </div>
-        <button onClick={() => setEdit("new")}>
-          <Plus size={15} />
-          Nova ideia
-        </button>
+        {edit !== "new" && (
+          <button onClick={() => setEdit("new")}>
+            <Plus size={15} />
+            Nova ideia
+          </button>
+        )}
       </div>
-      <div className="filters">
-        <Select
-          aria-label="Categoria das notas"
-          value={filter}
-          onValueChange={(value) => setFilter(value)}
-        >
-          <SelectOption value="">Todas as categorias</SelectOption>
-          {categories.map((x) => (
-            <SelectOption key={x}>{x}</SelectOption>
-          ))}
-        </Select>
-        <input
-          aria-label="Pesquisar notas"
-          placeholder="Pesquisar ideias…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
+      {state.notes.some((n) => n.state !== "Arquivada") && edit !== "new" && (
+        <div className="filters">
+          <Select
+            aria-label="Categoria das notas"
+            value={filter}
+            onValueChange={(value) => setFilter(value)}
+          >
+            <SelectOption value="">Todas as categorias</SelectOption>
+            {categories.map((x) => (
+              <SelectOption key={x}>{x}</SelectOption>
+            ))}
+          </Select>
+          <input
+            aria-label="Pesquisar notas"
+            placeholder="Pesquisar ideias…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      )}
       {edit === "new" && (
         <NoteForm
           note="new"
@@ -162,15 +172,17 @@ export function Notebook({
         />
       )}{" "}
       {!notes.length && edit !== "new" && (
-        <Empty
-          title="Uma ideia não precisa estar pronta"
-          description="Guarde pensamentos, dúvidas ou decisões sem precisar escolher um capítulo. Você também pode pedir ao ChatGPT para registrar uma ideia durante a conversa."
-        >
-          <button onClick={() => setEdit("new")}>
-            <Plus size={14} />
-            Criar primeira ideia
-          </button>
-        </Empty>
+        <div className="notebook-empty">
+          <p>
+            {state.notes.some((n) => n.state !== "Arquivada")
+              ? "Nenhuma ideia corresponde à pesquisa."
+              : "Seu caderno começa com uma ideia."}
+          </p>
+          <span>
+            Guarde um pensamento ou peça ao ChatGPT para registrar algo da
+            conversa aqui.
+          </span>
+        </div>
       )}
       <div className="notes-list">
         {notes.map((n) =>

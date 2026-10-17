@@ -128,6 +128,8 @@ export type SelectionAnchor = {
 export function DocumentEditor({
   chapter,
   comments,
+  focusCommentId = "",
+  focusRequest = 0,
   onSave,
   onComment,
   onOpenComment,
@@ -139,6 +141,8 @@ export function DocumentEditor({
 }: {
   chapter: Chapter;
   comments: Comment[];
+  focusCommentId?: string;
+  focusRequest?: number;
   onSave: (content: Doc, baseRevision: number) => Promise<number>;
   onComment: (a: SelectionAnchor) => void;
   onOpenComment: (id: string) => void;
@@ -155,6 +159,8 @@ export function DocumentEditor({
     onCrossRef,
   });
   callbacks.current = { onOpenComment, onCitation, onFootnote, onCrossRef };
+  const focusCommentRef = useRef(focusCommentId);
+  focusCommentRef.current = focusCommentId;
   const commentsRef = useRef(comments);
   commentsRef.current = comments;
   const saveRef = useRef(onSave);
@@ -206,7 +212,8 @@ export function DocumentEditor({
                     const decorations: Decoration[] = [];
                     const json = state.doc.toJSON() as Doc;
                     for (const c of commentsRef.current.filter(
-                      (c) => c.status === "open",
+                      (c) =>
+                        c.status === "open" || c.id === focusCommentRef.current,
                     )) {
                       const resolved = resolveAnchor(json, c);
                       for (const range of resolved.ranges) {
@@ -219,7 +226,11 @@ export function DocumentEditor({
                           if (c.anchor.scope === "paragraph") {
                             decorations.push(
                               Decoration.node(pos, pos + node.nodeSize, {
-                                class: "commented-paragraph",
+                                class:
+                                  "commented-paragraph" +
+                                  (c.id === focusCommentRef.current
+                                    ? " comment-target-highlight"
+                                    : ""),
                                 "data-comment-id": c.id,
                               }),
                             );
@@ -234,6 +245,24 @@ export function DocumentEditor({
                                     element.dataset.commentId = c.id;
                                     element.contentEditable = "false";
                                     element.textContent = c.body;
+                                    element.setAttribute("role", "button");
+                                    element.setAttribute(
+                                      "aria-label",
+                                      "Abrir comentário associado ao parágrafo",
+                                    );
+                                    element.tabIndex = 0;
+                                    element.addEventListener(
+                                      "keydown",
+                                      (event) => {
+                                        if (
+                                          event.key === "Enter" ||
+                                          event.key === " "
+                                        ) {
+                                          event.preventDefault();
+                                          callbacks.current.onOpenComment(c.id);
+                                        }
+                                      },
+                                    );
                                     return element;
                                   },
                                   { key: c.id + "-label" },
@@ -252,7 +281,11 @@ export function DocumentEditor({
                                     pos + 1 + childPos + from,
                                     pos + 1 + childPos + to,
                                     {
-                                      class: "comment-highlight",
+                                      class:
+                                        "comment-highlight" +
+                                        (c.id === focusCommentRef.current
+                                          ? " comment-target-highlight"
+                                          : ""),
                                       "data-comment-id": c.id,
                                     },
                                   ),
@@ -383,6 +416,25 @@ export function DocumentEditor({
       if (timer.current) clearTimeout(timer.current);
     };
   }, []);
+  useEffect(() => {
+    if (!editor || !focusCommentId) return;
+    editor.view.dispatch(editor.state.tr.setMeta("comments", true));
+    const target = editor.view.dom.querySelector<HTMLElement>(
+      ".comment-target-highlight",
+    );
+    const pane = visual.current;
+    if (!target || !pane) return;
+    const top =
+      target.getBoundingClientRect().top -
+      pane.getBoundingClientRect().top +
+      pane.scrollTop;
+    pane.scrollTo({
+      top: Math.max(0, top - pane.clientHeight * 0.25),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+  }, [focusCommentId, focusRequest, editor]);
   if (!editor) return null;
   const button = (label: string, Icon: any, fn: () => void, active = false) => (
     <button

@@ -1,3 +1,5 @@
+import { CommentText } from "./CommentText";
+import "./comments.css";
 import { Select, SelectOption } from "./Select";
 import { useState, useEffect } from "react";
 import {
@@ -92,7 +94,7 @@ export function CommentsPanel({
   mutate: Mutate;
   chapterId?: string;
   selectedId?: string;
-  onNavigate: (id: string) => void;
+  onNavigate: (id: string, commentId?: string) => void;
 }) {
   const [author, setAuthor] = useState(""),
     [since, setSince] = useState("");
@@ -101,10 +103,17 @@ export function CommentsPanel({
     [expanded, setExpanded] = useState(selectedId || ""),
     [chapterFilter, setChapterFilter] = useState(chapterId || "");
   useEffect(() => {
-    if (selectedId)
-      document
-        .getElementById("comment-" + selectedId)
-        ?.scrollIntoView({ block: "nearest" });
+    if (selectedId) {
+      setExpanded(selectedId);
+      const item = document.getElementById("comment-" + selectedId);
+      const pane = item?.closest<HTMLElement>(".review-panel");
+      if (item && pane) {
+        const row = item.getBoundingClientRect(),
+          area = pane.getBoundingClientRect();
+        if (row.top < area.top || row.top > area.bottom - 80)
+          pane.scrollTop += row.top - area.top - 16;
+      }
+    }
   }, [selectedId]);
   const comments = state.comments.filter(
     (c) =>
@@ -138,33 +147,37 @@ export function CommentsPanel({
           <SelectOption value="reopened">Reabertos</SelectOption>
           <SelectOption value="all">Todos</SelectOption>
         </Select>
-        <Select
-          aria-label="Capítulo dos comentários"
-          value={chapterFilter}
-          onValueChange={(value) => setChapterFilter(value)}
-        >
-          <SelectOption value="">Todos os capítulos</SelectOption>
-          {state.chapters.map((c) => (
-            <SelectOption value={c.id} key={c.id}>
-              {c.title}
-            </SelectOption>
-          ))}
-        </Select>
-        <Select
-          aria-label="Autor do comentário"
-          value={author}
-          onValueChange={(value) => setAuthor(value)}
-        >
-          <SelectOption value="">Todos os autores</SelectOption>
-          <SelectOption>Laura</SelectOption>
-          <SelectOption>ChatGPT</SelectOption>
-        </Select>
-        <input
-          aria-label="Comentários a partir de"
-          type="date"
-          value={since}
-          onChange={(e) => setSince(e.target.value)}
-        />
+        {!chapterId && (
+          <>
+            <Select
+              aria-label="Capítulo dos comentários"
+              value={chapterFilter}
+              onValueChange={(value) => setChapterFilter(value)}
+            >
+              <SelectOption value="">Todos os capítulos</SelectOption>
+              {state.chapters.map((c) => (
+                <SelectOption value={c.id} key={c.id}>
+                  {c.title}
+                </SelectOption>
+              ))}
+            </Select>
+            <Select
+              aria-label="Autor do comentário"
+              value={author}
+              onValueChange={(value) => setAuthor(value)}
+            >
+              <SelectOption value="">Todos os autores</SelectOption>
+              <SelectOption>Laura</SelectOption>
+              <SelectOption>ChatGPT</SelectOption>
+            </Select>
+            <input
+              aria-label="Comentários a partir de"
+              type="date"
+              value={since}
+              onChange={(e) => setSince(e.target.value)}
+            />
+          </>
+        )}
         <input
           placeholder="Pesquisar comentários…"
           value={search}
@@ -179,7 +192,12 @@ export function CommentsPanel({
       )}
       {comments.map((c) => {
         const proposals = state.proposals.filter((p) => p.commentId === c.id);
-        const open = expanded === c.id || selectedId === c.id;
+        const open = expanded === c.id;
+        const chapter = state.chapters.find((x) => x.id === c.chapterId);
+        const anchor = chapter
+          ? resolveAnchor(chapter.content, c)
+          : { status: "orphan", ranges: [] };
+        const linked = anchor.ranges.length > 0;
         return (
           <article
             key={c.id}
@@ -189,14 +207,24 @@ export function CommentsPanel({
             <button
               className="comment-summary"
               onClick={() => setExpanded(open ? "" : c.id)}
+              aria-expanded={open}
+              aria-label={
+                (open
+                  ? "Recolher detalhes do comentário"
+                  : "Abrir detalhes do comentário") +
+                " de " +
+                (c.author || "Laura")
+              }
             >
-              <span className="comment-avatar">L</span>
+              <span className="comment-avatar">
+                {(c.author || "Laura").slice(0, 1)}
+              </span>
               <div>
                 <small>
                   {state.chapters.find((x) => x.id === c.chapterId)?.title} ·{" "}
                   {date(c.createdAt)}
                 </small>
-                <h3>{c.body}</h3>
+
                 <span className="subtle">
                   {c.reviewState === "reopened"
                     ? "Reaberto"
@@ -215,22 +243,52 @@ export function CommentsPanel({
                 </span>
               </div>
             </button>
-            {open && (
-              <div className="comment-detail">
-                {c.quote && <blockquote>{c.quote}</blockquote>}
-                <p className="anchor-state">{anchorStatus(c, state)}</p>
+            <div className="comment-context">
+              {c.quote ? (
+                <CommentText text={c.quote} quote limit={220} />
+              ) : (
+                <p className="comment-chapter-scope">
+                  Sobre o capítulo inteiro
+                </p>
+              )}
+              <CommentText text={c.body} />
+              <div className="comment-context-actions">
                 <button
                   className="text-button"
-                  onClick={() => onNavigate(c.chapterId)}
+                  onClick={() => onNavigate(c.chapterId, c.id)}
                 >
-                  Abrir capítulo <ArrowUpRight size={14} />
+                  {linked ? "Ir ao trecho" : "Abrir capítulo"}{" "}
+                  <ArrowUpRight size={14} />
                 </button>
+                {!open && (
+                  <button
+                    className="text-button"
+                    onClick={() => setExpanded(c.id)}
+                  >
+                    {c.replies.length
+                      ? `Ver respostas (${c.replies.length})`
+                      : "Responder"}
+                  </button>
+                )}
+              </div>
+              {anchor.status === "orphan" && (
+                <p className="anchor-state">
+                  O trecho mudou ou não foi localizado com segurança. A seleção
+                  original foi mantida acima.
+                </p>
+              )}
+            </div>
+            {open && (
+              <div className="comment-detail">
+                {anchor.status !== "orphan" && (
+                  <p className="anchor-state">{anchorStatus(c, state)}</p>
+                )}
                 {c.replies.map((r, i) => (
                   <div className="reply" key={i}>
                     <small>
                       {r.origin === "mcp" ? "ChatGPT" : "Laura"} · {date(r.at)}
                     </small>
-                    <p>{r.body}</p>
+                    <CommentText text={r.body} limit={600} />
                   </div>
                 ))}
                 <form

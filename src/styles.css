@@ -2350,11 +2350,6 @@ body,
 :root[data-theme="dark"] {
   --muted: #999;
 }
-.context-panel .filters .select-trigger[aria-label="Capítulo dos comentários"],
-.context-panel .filters .select-trigger[aria-label="Autor do comentário"],
-.context-panel .filters input[type="date"] {
-  display: none !important;
-}
 /* Non-blocking surfaces: forms stay in context, detail panels dock to the workspace. */
 .app-shell {
   position: relative;
