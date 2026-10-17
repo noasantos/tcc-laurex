@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { State } from "../../server/types";
 import type { Mutate } from "./Review";
-import { Select, SelectOption } from "./Select";
+import { ChapterPlacement } from "./ChapterPlacement";
 import "./chapter-create.css";
 
 export function ChapterCreate({
@@ -22,11 +22,6 @@ export function ChapterCreate({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const index = Math.min(Number(position), state.chapters.length);
-  const ordered: { id: string; title: string }[] = [...state.chapters];
-  ordered.splice(index, 0, {
-    id: "new",
-    title: title.trim() || "Novo capítulo",
-  });
   return (
     <section className="page-scroll chapter-create-page">
       <div className="chapter-create-content">
@@ -71,26 +66,7 @@ export function ChapterCreate({
               Defina o lugar deste capítulo no trabalho. O texto pode ser
               desenvolvido depois, com o ChatGPT.
             </p>
-            <label className="chapter-create-label">
-              Posição no documento
-              <Select
-                value={String(index)}
-                onValueChange={setPosition}
-                aria-label="Posição do novo capítulo"
-              >
-                {state.chapters.map((chapter, i) => (
-                  <SelectOption key={chapter.id} value={String(i)}>
-                    {i + 1}. Antes de {chapter.title}
-                  </SelectOption>
-                ))}
-                <SelectOption value={String(state.chapters.length)}>
-                  {state.chapters.length + 1}.{" "}
-                  {state.chapters.length
-                    ? "Ao final do trabalho"
-                    : "Primeiro capítulo"}
-                </SelectOption>
-              </Select>
-            </label>
+
             <label className="chapter-create-label">
               O que este capítulo deve abordar <span>Opcional</span>
               <textarea
@@ -124,26 +100,13 @@ export function ChapterCreate({
               </button>
             </div>
           </form>
-          <aside
-            className="chapter-order-preview"
-            aria-label="Prévia da ordem dos capítulos"
-          >
-            <h2>
-              <FileText size={14} /> Ordem dos capítulos
-            </h2>
-            <ol>
-              {ordered.map((chapter, i) => (
-                <li
-                  key={chapter.id}
-                  className={chapter.id === "new" ? "is-new" : ""}
-                >
-                  <span>{String(i + 1).padStart(2, "0")}</span>
-                  <span>{chapter.title}</span>
-                  {chapter.id === "new" && <small>Novo</small>}
-                </li>
-              ))}
-            </ol>
-          </aside>
+          <ChapterPlacement
+            chapters={state.chapters}
+            title={title}
+            position={index}
+            onPositionChange={(value) => setPosition(String(value))}
+            disabled={saving}
+          />
         </div>
       </div>
     </section>
