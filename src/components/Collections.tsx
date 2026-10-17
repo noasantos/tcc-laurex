@@ -1,4 +1,5 @@
 import "./notebook.css";
+import "./reference-details.css";
 import { Select, SelectOption } from "./Select";
 import { useState, useRef, useEffect } from "react";
 import {
@@ -15,6 +16,9 @@ import {
   MoreHorizontal,
   Search,
   Pencil,
+  FileText,
+  Paperclip,
+  LoaderCircle,
 } from "lucide-react";
 import { request } from "../api";
 import type { State, Note, Reference } from "../../server/types";
@@ -226,7 +230,6 @@ export function ReferenceDetails({
   onReturn,
   mutate,
   refresh,
-  onEdit,
 }: {
   reference: Reference;
   state: State;
@@ -234,17 +237,49 @@ export function ReferenceDetails({
   onReturn?: () => void;
   mutate?: Mutate;
   refresh?: () => Promise<void>;
-  onEdit?: () => void;
 }) {
   const [pdfId, setPdfId] = useState(reference.localPdfId || ""),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [editing, setEditing] = useState(false),
+    [uploading, setUploading] = useState(false),
+    [attached, setAttached] = useState(false);
+  const pdfInput = useRef<HTMLInputElement>(null);
+  const editButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => setPdfId(reference.localPdfId || ""), [reference.localPdfId]);
   const usages = referenceUsages(state, reference.key);
+  if (editing && mutate)
+    return (
+      <div className="reference-detail-edit">
+        <h2>Editar dados da fonte</h2>
+        <p className="subtle">Título, autoria e informações da publicação.</p>
+        <ReferenceForm
+          initial={reference}
+          projectRevision={state.revision}
+          mutate={mutate}
+          onDone={() => {
+            setEditing(false);
+            requestAnimationFrame(() => editButton.current?.focus());
+          }}
+          compact
+        />
+      </div>
+    );
   return (
     <>
       <div className="reference-detail">
-        <span className="subtle">
-          {reference.type} · {reference.key}
-        </span>
+        <div className="reference-data-heading">
+          <span>Dados bibliográficos</span>
+          {mutate && (
+            <button
+              type="button"
+              className="text-button"
+              ref={editButton}
+              onClick={() => setEditing(true)}
+            >
+              <Pencil size={13} aria-hidden="true" /> Editar dados
+            </button>
+          )}
+        </div>
         <h2>{reference.title}</h2>
         <p>
           {reference.authors || "Autores ainda não informados"}
@@ -267,11 +302,6 @@ export function ReferenceDetails({
         )}
         {reference.note && <p className="reference-note">{reference.note}</p>}
         <div className="actions">
-          {pdfId && (
-            <a href={"/api/sources/" + pdfId} target="_blank" rel="noreferrer">
-              PDF local <ArrowUpRight size={13} />
-            </a>
-          )}
           {reference.doi && (
             <a
               href={"https://doi.org/" + encodeURIComponent(reference.doi)}
@@ -318,64 +348,109 @@ export function ReferenceDetails({
       ) : (
         <p className="subtle">Ainda não citada no texto.</p>
       )}
-      {mutate && (
-        <details className="manual-reference-details">
-          <summary>Editar detalhes manualmente</summary>
-          {onEdit ? (
-            <button className="text-button" onClick={onEdit}>
-              <Pencil size={13} />
-              Editar no cartão da fonte
-            </button>
+      <section
+        className="reference-attachment"
+        aria-labelledby={"pdf-heading-" + reference.id}
+      >
+        <h3 id={"pdf-heading-" + reference.id}>
+          Arquivo da fonte <span>Opcional</span>
+        </h3>
+        <p>
+          Guarde o PDF desta publicação para consultar depois, sem procurar o
+          link.
+        </p>
+        <div className="reference-attachment-row">
+          <FileText size={20} strokeWidth={1.5} aria-hidden="true" />
+          {pdfId ? (
+            <a href={"/api/sources/" + pdfId} target="_blank" rel="noreferrer">
+              Abrir PDF <ArrowUpRight size={13} aria-hidden="true" />
+            </a>
           ) : (
-            <ReferenceForm
-              initial={reference}
-              projectRevision={state.revision}
-              mutate={mutate}
-              onDone={() => {}}
-              compact
-            />
+            <span className="subtle">Nenhum PDF anexado</span>
           )}
-          {refresh && (
-            <label className="button">
-              Associar PDF local
+          {mutate && refresh && (
+            <>
+              <button
+                type="button"
+                className="text-button"
+                disabled={uploading}
+                onClick={() => pdfInput.current?.click()}
+              >
+                {uploading ? (
+                  <LoaderCircle
+                    size={14}
+                    className="reference-upload-spinner"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Paperclip size={14} aria-hidden="true" />
+                )}
+                {uploading ? "Anexando…" : pdfId ? "Substituir" : "Anexar PDF"}
+              </button>
               <input
+                ref={pdfInput}
                 hidden
                 type="file"
                 accept="application/pdf,.pdf"
-                onChange={(e) => {
+                aria-label="Selecionar PDF da fonte"
+                disabled={uploading}
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
+                  e.target.value = "";
                   if (!file) return;
+                  setError("");
+                  setAttached(false);
                   if (file.size > 8 * 1024 * 1024) {
                     setError("Selecione um PDF de até 8 MB.");
                     return;
                   }
-                  const reader = new FileReader();
-                  reader.onload = async () => {
-                    try {
-                      const r = await request("reference-pdf", {
-                        expectedRevision: state.revision,
-                        referenceId: reference.id,
-                        name: file.name,
-                        base64: String(reader.result).split(",")[1],
-                      });
-                      setPdfId(r.sourceId);
-                      await refresh();
-                    } catch (e) {
-                      setError((e as Error).message);
-                    }
-                  };
-                  reader.readAsDataURL(file);
+                  setUploading(true);
+                  try {
+                    const data = await new Promise<string>(
+                      (resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () =>
+                          resolve(String(reader.result).split(",")[1]);
+                        reader.onerror = () =>
+                          reject(
+                            new Error(
+                              "Não foi possível ler o PDF. Tente selecionar o arquivo novamente.",
+                            ),
+                          );
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    const r = await request("reference-pdf", {
+                      expectedRevision: state.revision,
+                      referenceId: reference.id,
+                      name: file.name,
+                      base64: data,
+                    });
+                    setPdfId(r.sourceId);
+                    await refresh();
+                    setAttached(true);
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setUploading(false);
+                  }
                 }}
               />
-            </label>
+            </>
           )}
-          {error && (
-            <p role="alert" className="notice">
-              {error}
-            </p>
-          )}
-        </details>
-      )}
+        </div>
+        <span className="reference-attachment-hint">
+          PDF · até 8 MB · cópia guardada neste computador
+        </span>
+        <span className="reference-attachment-status" role="status">
+          {attached ? "PDF anexado à fonte." : ""}
+        </span>
+        {error && (
+          <p role="alert" className="notice">
+            {error}
+          </p>
+        )}
+      </section>
       {onReturn && (
         <button className="text-button" onClick={onReturn}>
           Voltar ao texto
@@ -442,7 +517,7 @@ function ReferenceForm({
       <Field label="Título da fonte">
         <input
           name="title"
-          autoFocus={!initial}
+          autoFocus={compact || !initial}
           required
           defaultValue={initial?.title}
           placeholder="Título do artigo, livro ou documento"
@@ -499,6 +574,16 @@ function ReferenceForm({
               ? "Guardar detalhes"
               : "Adicionar referência"}
         </button>
+        {compact && (
+          <button
+            type="button"
+            className="text-button"
+            disabled={saving}
+            onClick={onDone}
+          >
+            Cancelar
+          </button>
+        )}
       </div>
     </form>
   );
@@ -730,10 +815,6 @@ export function References({
               state={state}
               mutate={mutate}
               refresh={refresh}
-              onEdit={() => {
-                setEditingId(selected.id);
-                setSelectedId("");
-              }}
               onNavigate={onNavigate}
             />
           </aside>
