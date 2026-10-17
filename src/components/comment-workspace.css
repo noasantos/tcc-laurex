@@ -488,3 +488,89 @@
     flex-basis: 100%;
   }
 }
+/* Completion belongs to the status line, leaving the title and date their full width. */
+.comments-workspace .comment-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 10px;
+}
+.comments-workspace .comment-heading .comment-summary {
+  width: 100%;
+  margin: 0;
+  flex: none;
+}
+.comment-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-left: 42px;
+  min-height: 30px;
+}
+.comments-workspace .comment-status-row .comment-state-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.comments-workspace .comment-complete-icon.text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: none;
+  background: transparent;
+  color: var(--muted);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+.comments-workspace .comment-complete-icon:hover {
+  background: var(--selected);
+  color: var(--text);
+}
+.comment-complete-icon:focus-visible {
+  outline: 2px solid var(--muted);
+  outline-offset: 2px;
+}
+.is-contextual .comment-status-row {
+  margin-left: 33px;
+}
+@media (max-width: 760px) {
+  .comment-status-row {
+    margin-left: 0;
+  }
+}
+@media (pointer: coarse) {
+  .comments-workspace .comment-complete-icon.text-button {
+    width: 40px;
+    height: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .comments-workspace .comment-complete-icon.text-button {
+    transition: none;
+  }
+}
+.comments-workspace .comment-summary .comment-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 5px;
+  align-items: baseline;
+}
+.comment-metadata time {
+  white-space: nowrap;
+}
+.comment-metadata > span:first-child {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}

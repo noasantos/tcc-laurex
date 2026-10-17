@@ -3,6 +3,12 @@ import { CommentFilters } from "./CommentFilters";
 import { selectComments } from "./comment-filters";
 import { Tabs, TabsContent } from "./ui/tabs";
 import { Badge } from "./ui/badge";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "./ui/tooltip";
 import "./comment-workspace.css";
 import { CommentText } from "./CommentText";
 import "./comments.css";
@@ -271,41 +277,68 @@ export function CommentsPanel({
                         <span> · via ChatGPT</span>
                       )}
                     </small>
-                    <small>
-                      {state.chapters.find((x) => x.id === c.chapterId)?.title}{" "}
-                      · {date(c.createdAt)}
+                    <small className="comment-metadata">
+                      <span>
+                        {
+                          state.chapters.find((x) => x.id === c.chapterId)
+                            ?.title
+                        }
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <time dateTime={c.createdAt}>{date(c.createdAt)}</time>
                     </small>
-
-                    <span
-                      className="subtle comment-state-label"
-                      data-status={c.status}
-                    >
-                      <span
-                        className="comment-state-dot"
-                        data-status={c.status}
-                      />
-                      {c.status === "resolved" ? "Concluído" : "Em aberto"}
-                    </span>
                   </div>
                 </button>
-                <button
-                  className="comment-complete text-button"
-                  onClick={() =>
-                    mutate(
-                      c.status === "resolved"
-                        ? "reopen_comment"
-                        : "resolve_comment",
-                      { commentId: c.id },
-                    )
-                  }
-                >
-                  {c.status === "resolved" ? (
-                    <RotateCcw size={14} />
-                  ) : (
-                    <CheckCircle2 size={14} />
-                  )}
-                  {c.status === "resolved" ? "Reabrir" : "Concluir"}
-                </button>
+                <div className="comment-status-row">
+                  <span
+                    className="subtle comment-state-label"
+                    data-status={c.status}
+                  >
+                    <span
+                      className="comment-state-dot"
+                      data-status={c.status}
+                    />
+                    {c.status === "resolved" ? "Concluído" : "Em aberto"}
+                  </span>
+                  <TooltipProvider delayDuration={250}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="comment-complete comment-complete-icon text-button"
+                          aria-label={
+                            c.status === "resolved"
+                              ? "Reabrir comentário"
+                              : "Concluir comentário"
+                          }
+                          onClick={() =>
+                            mutate(
+                              c.status === "resolved"
+                                ? "reopen_comment"
+                                : "resolve_comment",
+                              { commentId: c.id },
+                            )
+                          }
+                        >
+                          {c.status === "resolved" ? (
+                            <RotateCcw size={16} aria-hidden="true" />
+                          ) : (
+                            <CheckCircle2 size={16} aria-hidden="true" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        sideOffset={6}
+                        className="motion-reduce:animate-none"
+                      >
+                        {c.status === "resolved"
+                          ? "Reabrir comentário"
+                          : "Concluir comentário"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
               <div className="comment-context">
                 {c.quote ? (
