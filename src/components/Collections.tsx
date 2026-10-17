@@ -99,12 +99,16 @@ export function Notebook({
   state,
   mutate,
   initialNoteId,
+  startNew = false,
 }: {
   state: State;
   mutate: Mutate;
   initialNoteId?: string;
+  startNew?: boolean;
 }) {
-  const [edit, setEdit] = useState<Note | "new" | null>(null),
+  const [edit, setEdit] = useState<Note | "new" | null>(
+      startNew ? "new" : null,
+    ),
     [filter, setFilter] = useState(""),
     [query, setQuery] = useState("");
   useEffect(() => {
@@ -160,8 +164,13 @@ export function Notebook({
       {!notes.length && edit !== "new" && (
         <Empty
           title="Uma ideia não precisa estar pronta"
-          description="Registre aqui ou peça ao ChatGPT para guardar uma ideia, hipótese ou decisão durante a conversa."
-        />
+          description="Guarde pensamentos, dúvidas ou decisões sem precisar escolher um capítulo. Você também pode pedir ao ChatGPT para registrar uma ideia durante a conversa."
+        >
+          <button onClick={() => setEdit("new")}>
+            <Plus size={14} />
+            Criar primeira ideia
+          </button>
+        </Empty>
       )}
       <div className="notes-list">
         {notes.map((n) =>
@@ -810,11 +819,18 @@ export function Overview({
   state,
   onNavigate,
   onPage,
+  onCreateNote,
 }: {
   state: State;
   onNavigate: (id: string) => void;
   onPage: (p: string) => void;
+  onCreateNote: () => void;
 }) {
+  const recentNotes = state.notes
+    .filter((note) => note.state !== "Arquivada")
+    .slice()
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 3);
   const count = (s: string) =>
     state.chapters.filter((c) => c.status === s).length;
   return (
@@ -890,21 +906,52 @@ export function Overview({
           description="Use o botão + ao lado de Capítulos ou importe um arquivo nas configurações."
         />
       )}
-      <h2>Ideias recentes</h2>
-      {state.notes
-        .filter((n) => n.state !== "Arquivada")
-        .slice(-3)
-        .reverse()
-        .map((n) => (
-          <button
-            className="list-link"
-            key={n.id}
-            onClick={() => onPage("notes")}
-          >
-            <Lightbulb size={17} />
-            <span>{n.title || n.content.slice(0, 90)}</span>
+      <section className="recent-ideas" aria-labelledby="recent-ideas-title">
+        <div className="recent-ideas-heading">
+          <h2 id="recent-ideas-title">Ideias recentes</h2>
+          <button className="text-button" onClick={onCreateNote}>
+            <Plus size={14} />
+            Nova ideia
           </button>
-        ))}
+        </div>
+        {recentNotes.length ? (
+          <>
+            <div className="recent-ideas-list">
+              {recentNotes.map((note) => (
+                <button
+                  className="list-link"
+                  key={note.id}
+                  onClick={() => onPage("notes")}
+                >
+                  <Lightbulb size={16} />
+                  <span>
+                    <strong>{note.title || note.content.slice(0, 90)}</strong>
+                    <small>{note.category}</small>
+                  </span>
+                  <ArrowUpRight className="list-link-trailing" size={14} />
+                </button>
+              ))}
+            </div>
+            <div className="recent-ideas-footer">
+              <p>
+                Também vale pedir ao ChatGPT: “Guarde esta ideia no meu
+                caderno.”
+              </p>
+              <button className="text-button" onClick={() => onPage("notes")}>
+                Abrir caderno <ArrowUpRight size={12} />
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="ideas-empty">
+            <p>Seu caderno começa com uma ideia.</p>
+            <span>
+              Anote um pensamento, uma dúvida ou peça ao ChatGPT para guardar
+              algo da conversa aqui.
+            </span>
+          </div>
+        )}
+      </section>
     </section>
   );
 }

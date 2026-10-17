@@ -74,6 +74,7 @@ export default function App() {
     [settingsTab, setSettingsTab] = useState("general"),
     [referencePageId, setReferencePageId] = useState(""),
     [noteSearchId, setNoteSearchId] = useState(""),
+    [noteCompose, setNoteCompose] = useState(false),
     [searchNavigation, setSearchNavigation] = useState(0),
     [insert, setInsert] = useState<{
       kind: string;
@@ -211,6 +212,7 @@ export default function App() {
       setError("Aguarde o salvamento antes de navegar.");
       return;
     }
+    setNoteCompose(false);
     setCommentOpen(false);
     setPage(p);
     setCommentPanel(false);
@@ -584,12 +586,27 @@ export default function App() {
               </Empty>
             ))}
           {page === "overview" && (
-            <Overview state={state} onNavigate={navigate} onPage={goPage} />
+            <Overview
+              state={state}
+              onNavigate={navigate}
+              onPage={goPage}
+              onCreateNote={() => {
+                if (dirty) {
+                  setError("Aguarde o salvamento antes de criar uma ideia.");
+                  return;
+                }
+                goPage("notes");
+                setNoteSearchId("");
+                setNoteCompose(true);
+                setSearchNavigation((n) => n + 1);
+              }}
+            />
           )}{" "}
           {page === "notes" && (
             <Notebook
               key={noteSearchId + searchNavigation}
               initialNoteId={noteSearchId}
+              startNew={noteCompose}
               state={state}
               mutate={mutate}
             />
