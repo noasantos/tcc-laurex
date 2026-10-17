@@ -1,3 +1,4 @@
+import { AutomaticBackups, backupPolicy } from "./automatic-backups";
 import Fastify from "fastify";
 import staticFiles from "@fastify/static";
 import {
@@ -5,8 +6,6 @@ import {
   readFileSync,
   watch,
   readdirSync,
-  statSync,
-  unlinkSync,
   mkdirSync,
 } from "node:fs";
 import { resolve, join, relative, isAbsolute } from "node:path";
@@ -138,6 +137,7 @@ app.get("/api/diagnostics", async () => ({
   compiler: await compiler(),
   mcp: store.get().settings,
   chatgptVerified: false,
+  automaticBackups: {policy: backupPolicy, error: automaticBackups.error},
 }));
 app.post("/api/backup", async () => {
   return { file: await verifiedBackup() };
@@ -503,34 +503,20 @@ if (existsSync(join(dist, "index.html"))) {
 async function verifiedBackup() {
   const file = store.backup();
   await verifyBackupByRestore(file);
-  const days = store.get().settings.backupRetentionDays || 0;
-  if (days) {
-    const owned = readdirSync(store.backups)
-      .filter((f) => /^\d{4}-\d{2}-\d{2}T.*-[a-f0-9]{8}\.json$/.test(f))
-      .sort()
-      .reverse();
-    for (const name of owned.slice(3)) {
-      const path = join(store.backups, name);
-      if (
-        statSync(path).isFile() &&
-        Date.now() - statSync(path).mtimeMs > days * 86400000
-      )
-        unlinkSync(path);
-    }
-  }
   return file;
 }
+const automaticBackups = new AutomaticBackups(store);
 const backupTimer = setInterval(
   () => {
-    void verifiedBackup().catch((e) =>
+    void automaticBackups.run().catch((e) =>
       console.error("Backup não verificado:", e.message),
     );
   },
-  15 * 60 * 1000,
+  backupPolicy.intervalMs,
 );
 backupTimer.unref();
-store.backup();
 await app.listen({ port, host: "127.0.0.1" });
+void automaticBackups.run().catch(e => console.error("Backup automático não verificado:", e.message));
 console.log(
   `Laura Workspace: ${origin}\nDados: ${store.root}\nCtrl+C para encerrar.`,
 );
@@ -538,8 +524,9 @@ const shutdown = async () => {
   clearInterval(backupTimer);
   databaseWatcher.close();
   for (const response of listeners) response.end();
-  store.backup();
   await app.close();
+  try { await automaticBackups.run(); }
+  catch (e) { console.error("Backup ao encerrar não verificado:", (e as Error).message); }
   store.close();
   process.exit(0);
 };

@@ -291,24 +291,35 @@ export function Settings({
             </p>
           </div>
         </details>
-        <Field label="Retenção dos backups automáticos (dias; 0 mantém todos)">
-          <input
-            type="number"
-            min="0"
-            max="3650"
-            defaultValue={state.settings.backupRetentionDays || 0}
-            onBlur={(e) => {
-              const days = Number(e.target.value);
-              if (
-                Number.isInteger(days) &&
-                days >= 0 &&
-                days <= 3650 &&
-                days !== (state.settings.backupRetentionDays || 0)
-              )
-                void mutate("update_settings", { backupRetentionDays: days });
-            }}
-          />
-        </Field>
+        <section
+          className="backup-policy"
+          aria-labelledby="backup-policy-title"
+        >
+          <h4 id="backup-policy-title">Backup automático</h4>
+          <dl>
+            <div>
+              <dt>Últimos 7 dias</dt>
+              <dd>Uma cópia por hora</dd>
+            </div>
+            <div>
+              <dt>Até 30 dias</dt>
+              <dd>Uma cópia por dia</dd>
+            </div>
+          </dl>
+          <p>
+            Somente quando houver alterações, enquanto o workspace estiver em
+            execução. A restauração é verificada antes de limpar cópias antigas.
+          </p>
+          <p>
+            Cópias manuais e pontos de segurança são preservados separadamente.
+          </p>
+          {diagnostic?.automaticBackups?.error && (
+            <p role="alert" className="notice">
+              O backup automático precisa de atenção:{" "}
+              {diagnostic.automaticBackups.error}
+            </p>
+          )}
+        </section>
         <div className="actions">
           <button
             onClick={() =>

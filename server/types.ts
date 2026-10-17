@@ -112,6 +112,7 @@ export type State = {
   settings: {
     mcpEnabled: boolean;
     mcpWrite: boolean;
+    /** Legacy data only; automatic backups now use the fixed 7/30-day policy. */
     backupRetentionDays?: number;
   };
 };

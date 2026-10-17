@@ -268,8 +268,8 @@ export class Store {
       );
     } catch {}
   }
-  backup() {
-    const payload = {
+  backupPayload() {
+    return {
       format: "laura-backup-v1",
       state: this.get(),
       audit: this.db.prepare("SELECT * FROM audit").all(),
@@ -278,10 +278,13 @@ export class Store {
         (x) => ({ ...x, content: Buffer.from(x.content).toString("base64") }),
       ),
     };
+  }
+  backup(options: { automatic?: boolean; at?: Date } = {}) {
+    const payload = this.backupPayload();
     const json = JSON.stringify(payload);
     const file = join(
       this.backups,
-      `${new Date().toISOString().replaceAll(":", "-")}-${randomUUID().slice(0, 8)}.json`,
+      `${options.automatic ? "auto-" : ""}${(options.at || new Date()).toISOString().replaceAll(":", "-")}-${randomUUID().slice(0, 8)}.json`,
     );
     atomic(
       file,
@@ -297,7 +300,7 @@ export class Store {
       database: this.db.prepare("PRAGMA integrity_check").all(),
       versions: this.versions().length,
       foreignKeys: this.db.prepare("PRAGMA foreign_key_check").all(),
-      backups: readdirSync(this.backups).filter((x) => x.endsWith(".json")),
+      backups: readdirSync(this.backups).filter((x) => x.endsWith(".json") && x !== "automatic-index.json"),
       root: this.root,
     };
   }

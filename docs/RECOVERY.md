@@ -38,3 +38,19 @@ Para obter um backup consistente, use o comando ou a interface. Backups incluem 
 > Meu Laura Workspace não está abrindo. Preserve meus dados atuais e quaisquer arquivos SQLite WAL/SHM. Leia docs/RECOVERY.md. Localize a pasta ativa e os backups, verifique os checksums e a integridade sem apagar nada. Se o banco estiver corrompido, restaure para uma pasta nova, mantendo a original intacta. Exporte os capítulos, notas e comentários recuperados e compare com o backup. Não declare recuperação concluída sem abrir e verificar os dados restaurados. Não publique meu conteúdo nem peça que eu cole credenciais no chat.
 
 Backups locais não substituem uma cópia em outro dispositivo. A aplicação mantém todos por padrão; um prazo de retenção só passa a valer se você o configurar explicitamente.
+
+
+## Política automática padrão
+
+O servidor local tenta criar uma cópia a cada 60 minutos, além da inicialização e do encerramento normal. Cada cópia contém o projeto completo, os originais e todo o histórico. Sem alterações nesses dados, o arquivo não é repetido; registros de auditoria de consultas não contam como mudanças acadêmicas. O arquivo de backup mais recente continua preservado mesmo após longos períodos sem edição.
+
+- Últimos 7 dias: manter a cópia mais recente de cada hora.
+- Do 7º ao 30º dia: manter a cópia mais recente de cada dia.
+- Preservar sempre pelo menos as três cópias automáticas mais recentes existentes. Não criar cópias repetidas só para atingir três.
+- Horas e dias de retenção usam intervalos UTC, evitando ambiguidades na mudança de horário.
+
+Uma cópia nova precisa passar por restauração em um banco temporário. Antes de apagar qualquer cópia expirada, o serviço valida a integridade de todos os arquivos do índice e verifica a restauração da cópia atual. Se a verificação falhar, a limpeza não começa. Falhas são registradas no servidor e aparecem em Configurações → Avançado quando os diagnósticos são consultados.
+
+A limpeza só atua sobre arquivos `auto-…json` do índice `backups/automatic-index.json`, pertencentes a este projeto. Backups legados, manuais, originais e pontos de segurança anteriores a operações não são removidos automaticamente. Um índice corrompido ou de outro projeto interrompe a rotina; não recrie nem edite esse índice sem preservar os arquivos existentes. O campo legado `backupRetentionDays` continua legível nos backups antigos, mas deixou de ser uma configuração de escrita.
+
+O agendamento depende do servidor local estar em execução; não há cópias durante o computador desligado. Reiniciar o servidor retoma a proteção sem gerar duplicatas do mesmo estado. Uma cópia em outro disco continua necessária para proteger contra a perda do equipamento.

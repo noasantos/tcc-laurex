@@ -63,7 +63,9 @@ Os dados ficam **fora da pasta da aplicação**:
 
 O caminho real aparece em Configurações. É possível copiar o projeto para uma pasta nova e vazia e passar a usá-la após reiniciar. O estado anterior permanece preservado. A alteração desliga a conexão MCP.
 
-Há salvamento automático, rascunho de emergência no navegador, versões transacionais e backups a cada 15 minutos, além de snapshots antes de substituir conteúdo. Os backups automáticos são verificados por restauração em um banco temporário. A retenção padrão mantém todos; opcionalmente configure um prazo, preservando sempre pelo menos três backups recentes e todo o histórico contido no backup atual.
+Há salvamento automático, rascunho de emergência no navegador e versões transacionais. O servidor local verifica alterações a cada hora: mantém uma cópia por hora nos últimos 7 dias e uma por dia até 30 dias, preservando sempre pelo menos três cópias automáticas existentes. A inicialização e o encerramento normal também tentam proteger as alterações; sem mudanças no projeto, histórico ou originais, nenhuma cópia idêntica é criada. Eventos de auditoria de consultas não geram duplicatas. Dias sem alterações não criam arquivos extras: a última cópia continua preservada.
+
+Cada nova cópia automática passa por restauração em um banco temporário. Antes de qualquer limpeza, todas as cópias catalogadas têm sua integridade conferida e a cópia atual é validada por restauração. Uma falha interrompe a limpeza. Somente arquivos `auto-…json` registrados no índice automático pertencem a essa política; cópias manuais, pontos antes de operações e backups legados permanecem preservados. A antiga opção `backupRetentionDays` é mantida apenas para compatibilidade dos dados; a política automática fixa substitui essa configuração. Consulte [a política e recuperação](docs/RECOVERY.md).
 
 - **Exportar tudo:** baixa um backup com documentos, planejamento, notas, comentários, referências, originais e versões.
 - **Histórico:** compara e restaura versões do projeto; restaurar cria uma versão nova.

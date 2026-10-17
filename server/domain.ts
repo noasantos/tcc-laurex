@@ -187,7 +187,6 @@ export const schemas = {
   update_settings: z.object({
     expectedRevision: rev,
     name: id.optional(),
-    backupRetentionDays: z.number().int().min(0).max(3650).optional(),
     mcpEnabled: z.boolean().optional(),
     mcpWrite: z.boolean().optional(),
   }),
@@ -665,7 +664,6 @@ export class Domain {
             for (const k of [
               "mcpEnabled",
               "mcpWrite",
-              "backupRetentionDays",
             ] as const)
               if (a[k] !== undefined) (s.settings as any)[k] = a[k];
             if (!s.settings.mcpEnabled) s.settings.mcpWrite = false;
