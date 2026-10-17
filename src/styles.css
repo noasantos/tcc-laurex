@@ -2353,7 +2353,7 @@ body,
 .context-panel .filters .select-trigger[aria-label="Capítulo dos comentários"],
 .context-panel .filters .select-trigger[aria-label="Autor do comentário"],
 .context-panel .filters input[type="date"] {
-  display: none;
+  display: none !important;
 }
 /* Non-blocking surfaces: forms stay in context, detail panels dock to the workspace. */
 .app-shell {
@@ -3121,128 +3121,6 @@ body,
   }
   .reference-form .form-grid {
     grid-template-columns: minmax(0, 1fr) 95px;
-  }
-}
-/* Shared Radix selection menu: compact, keyboard accessible, theme aware. */
-.select-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  text-align: left;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.4;
-  padding: 8px 10px;
-  min-height: 33px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  min-width: 0;
-  max-width: 100%;
-}
-.select-trigger > span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-.select-trigger > svg {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-  color: var(--muted);
-}
-.select-trigger:hover,
-.select-trigger[data-state="open"] {
-  background: var(--selected);
-}
-.select-trigger:focus-visible {
-  outline: 2px solid var(--muted);
-  outline-offset: 2px;
-}
-.select-trigger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.select-content {
-  z-index: 100;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 4px;
-  box-shadow: 0 6px 24px #0002;
-  min-width: var(--radix-select-trigger-width);
-  max-width: calc(100vw - 20px);
-  max-height: min(300px, var(--radix-select-content-available-height));
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 1.4;
-  animation: select-appear 0.1s ease-out;
-}
-.select-viewport {
-  padding: 0;
-  max-height: inherit;
-  scrollbar-width: thin;
-}
-.select-item {
-  display: flex;
-  align-items: center;
-  position: relative;
-  gap: 20px;
-  padding: 8px 30px 8px 10px;
-  min-height: 31px;
-  border-radius: 4px;
-  cursor: default;
-  user-select: none;
-  outline: none;
-  overflow-wrap: anywhere;
-}
-.select-item[data-highlighted] {
-  background: var(--selected);
-  color: var(--text);
-}
-.select-item[data-disabled] {
-  opacity: 0.4;
-  pointer-events: none;
-}
-.select-indicator {
-  position: absolute;
-  right: 9px;
-  display: flex;
-  align-items: center;
-}
-.select-indicator svg,
-.select-scroll svg {
-  width: 13px;
-  height: 13px;
-}
-.select-scroll {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 20px;
-  color: var(--muted);
-}
-.field > .select-trigger {
-  width: 100%;
-}
-@keyframes select-appear {
-  from {
-    opacity: 0;
-    transform: translateY(-2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .select-content {
-    animation: none;
   }
 }
 /* Appearance is a small visual choice, with an immediate shortcut in the header. */

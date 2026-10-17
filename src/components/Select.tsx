@@ -1,4 +1,12 @@
-import * as Primitive from "@radix-ui/react-select";
+import {
+  Select as SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from "./ui/select";
+import { cn } from "cn";
 import {
   Children,
   isValidElement,
@@ -6,7 +14,6 @@ import {
   type ReactNode,
   type ButtonHTMLAttributes,
 } from "react";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 type OptionProps = { value?: string; disabled?: boolean; children: ReactNode };
 // Declarative options are consumed by Select; the native system menu is never rendered.
@@ -72,7 +79,7 @@ export function Select({
       {name && (
         <input type="hidden" name={name} value={selected} disabled={disabled} />
       )}
-      <Primitive.Root
+      <SelectRoot
         value={selected || emptyValue}
         onValueChange={(next) => {
           const result = next === emptyValue ? "" : next;
@@ -82,49 +89,35 @@ export function Select({
         required={required}
         disabled={disabled}
       >
-        <Primitive.Trigger
+        <SelectTrigger
           {...triggerProps}
-          className={"select-trigger " + className}
+          size="sm"
+          className={cn(
+            "select-trigger min-w-0 [.field_&]:w-full [.context-panel_&]:w-full",
+            className,
+          )}
         >
-          <Primitive.Value />
-          <Primitive.Icon asChild>
-            <ChevronDown />
-          </Primitive.Icon>
-        </Primitive.Trigger>
-        <Primitive.Portal>
-          <Primitive.Content
-            data-select-content=""
-            className="select-content"
-            position="popper"
-            sideOffset={5}
-            collisionPadding={10}
-          >
-            <Primitive.ScrollUpButton className="select-scroll">
-              <ChevronUp />
-            </Primitive.ScrollUpButton>
-            <Primitive.Viewport className="select-viewport">
-              <Primitive.Group>
-                {options.map((option) => (
-                  <Primitive.Item
-                    key={option.value}
-                    value={option.value || emptyValue}
-                    disabled={option.disabled}
-                    className="select-item"
-                  >
-                    <Primitive.ItemText>{option.label}</Primitive.ItemText>
-                    <Primitive.ItemIndicator className="select-indicator">
-                      <Check />
-                    </Primitive.ItemIndicator>
-                  </Primitive.Item>
-                ))}
-              </Primitive.Group>
-            </Primitive.Viewport>
-            <Primitive.ScrollDownButton className="select-scroll">
-              <ChevronDown />
-            </Primitive.ScrollDownButton>
-          </Primitive.Content>
-        </Primitive.Portal>
-      </Primitive.Root>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent
+          data-select-content=""
+          position="popper"
+          align="start"
+          collisionPadding={10}
+        >
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem
+                key={option.value}
+                value={option.value || emptyValue}
+                disabled={option.disabled}
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </SelectRoot>
     </>
   );
 }

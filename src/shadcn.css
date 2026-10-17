@@ -1,0 +1,34 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) important;
+@import "tw-animate-css";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@theme inline {
+  --color-background: var(--surface);
+  --color-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-accent: var(--selected);
+  --color-accent-foreground: var(--text);
+  --color-muted-foreground: var(--muted);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--muted);
+  --color-destructive: var(--danger);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="select-content"] {
+    animation: none !important;
+  }
+}
+
+/* Apply shadcn's border token locally; the existing app keeps its own base styles. */
+@layer base {
+  [data-slot="select-content"] {
+    border-color: var(--color-border);
+  }
+}
