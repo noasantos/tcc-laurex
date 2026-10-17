@@ -1,3 +1,4 @@
+import { readSourceMode } from "../workspace-resume";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { isCommentAnchorVisible } from "./comment-visibility";
 import { CommentHover } from "./CommentHover";
@@ -188,8 +189,11 @@ export function DocumentEditor({
   const [state, setState] = useState("Salvo");
   const [more, setMore] = useState(false);
   const [sourceMode, setSourceMode] = useState<"visual" | "source" | "split">(
-    "visual",
+    () => readSourceMode(chapter.id),
   );
+  useEffect(() => {
+    try { sessionStorage.setItem("laura-source-mode-" + chapter.id, sourceMode); } catch {}
+  }, [chapter.id, sourceMode]);
   const sourceModeRef = useRef(sourceMode);
   sourceModeRef.current = sourceMode;
   const [hovered, setHovered] = useState<{ id: string; rect: DOMRect } | null>(

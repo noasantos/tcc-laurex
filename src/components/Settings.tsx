@@ -16,6 +16,7 @@ export function Settings({
   onTheme,
   theme,
   initialTab = "general",
+  onTabChange,
 }: {
   state: State;
   mutate: Mutate;
@@ -23,6 +24,7 @@ export function Settings({
   onTheme: (s: string) => void;
   theme: string;
   initialTab?: string;
+  onTabChange?: (tab: string) => void;
 }) {
   const [tab, setTab] = useState(initialTab);
   const [copied, setCopied] = useState("");
@@ -132,7 +134,7 @@ export function Settings({
             key={id}
             className={tab === id ? "selected" : ""}
             aria-pressed={tab === id}
-            onClick={() => setTab(id)}
+            onClick={() => { setTab(id); onTabChange?.(id); }}
           >
             {label}
           </button>

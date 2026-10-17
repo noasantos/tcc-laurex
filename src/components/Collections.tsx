@@ -605,11 +605,19 @@ export function References({
 }) {
   const [manual, setManual] = useState(false),
     [editingId, setEditingId] = useState(""),
-    [selectedId, setSelectedId] = useState(initialReferenceId || ""),
+    [selectedId, setSelectedId] = useState(() => {
+      try {
+        const saved = sessionStorage.getItem("laura-reference-selection-" + state.id) || "";
+        return initialReferenceId || (state.references.some(r => r.id === saved) ? saved : "");
+      } catch { return initialReferenceId || ""; }
+    }),
     [query, setQuery] = useState(""),
     [help, setHelp] = useState(false),
     [copied, setCopied] = useState(false),
     [error, setError] = useState("");
+  useEffect(() => {
+    try { sessionStorage.setItem("laura-reference-selection-" + state.id, selectedId); } catch {}
+  }, [state.id, selectedId]);
   const selected = state.references.find((r) => r.id === selectedId);
   const list = state.references.filter((r) =>
     JSON.stringify(r).toLowerCase().includes(query.toLowerCase()),

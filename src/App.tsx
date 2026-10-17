@@ -1,3 +1,5 @@
+import { readWorkspaceResume, resolveWorkspaceResume } from "./workspace-resume";
+import { useWorkspaceResume } from "./useWorkspaceResume";
 import { ChapterNavigation } from "./components/ChapterNavigation";
 import { ChapterStatus } from "./components/ChapterStatus";
 import { ChapterCreate } from "./components/ChapterCreate";
@@ -51,6 +53,8 @@ import {
 import { VersionHistory } from "./components/History";
 import { Settings, Welcome } from "./components/Settings";
 export default function App() {
+  const [resume] = useState(readWorkspaceResume);
+  const resumed = useRef(false);
   const [state, setState] = useState<State | null>(null),
     [page, setPage] = useState("overview"),
     [chapterId, setChapterId] = useState(""),
@@ -97,9 +101,22 @@ export default function App() {
   const editorSave = useRef<{ flush: () => Promise<void>; release: () => void } | null>(null);
   const [comparisonId, setComparisonId] = useState("");
   const [visibleCommentAnchors, setVisibleCommentAnchors] = useState<{ chapterId: string; ids: string[] }>({chapterId: "", ids: []});
+  useWorkspaceResume(state?.id, {page,chapterId,commentPanel,commentId,settingsTab,comparisonId}, resume);
   async function refresh() {
     const s = await request<State>("state");
     if (s.revision < (stateRef.current?.revision || 0)) return;
+    if (!resumed.current) {
+      resumed.current = true;
+      const restored = resolveWorkspaceResume(resume, s);
+      if (restored) {
+        setPage(restored.page);
+        setChapterId(restored.chapterId);
+        setCommentPanel(restored.commentPanel);
+        setCommentId(restored.commentId);
+        setSettingsTab(restored.settingsTab);
+        setComparisonId(restored.comparisonId);
+      }
+    }
     stateRef.current = s;
     setState(s);
     setChapterId((id) => id || s.chapters[0]?.id || "");
@@ -645,6 +662,7 @@ export default function App() {
                 onTheme={setTheme}
                 theme={theme}
                 initialTab={settingsTab}
+                onTabChange={setSettingsTab}
               />
             </section>
           )}
