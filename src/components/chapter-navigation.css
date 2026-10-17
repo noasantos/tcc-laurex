@@ -10,3 +10,5 @@
 .sortable-chapter .chapter-drag-handle:disabled {visibility:hidden;}
 @media(hover:none) {.sortable-chapter .chapter-drag-handle {opacity:.6;}}
 @media(prefers-reduced-motion:reduce) {.sortable-chapter,.sortable-chapter .chapter-drag-handle {transition:none!important;}}
+.chapter-nav-item .chapter-nav-number{font:10px ui-monospace,monospace;color:var(--muted);min-width:17px;flex-shrink:0}.chapter-nav-item{gap:7px}
+.sortable-chapter .chapter-nav-item{display:flex;align-items:center;gap:8px}.chapter-nav-item>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

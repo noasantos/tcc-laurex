@@ -177,8 +177,10 @@ function SortableChapter({
         style={{ paddingLeft: chapter.parentId ? 18 : 4 }}
         onClick={() => onNavigate(chapter.id)}
         title={chapter.title}
+        aria-label={`${chapter.number}. ${chapter.title}`}
       >
-        {chapter.title}
+        <span className="chapter-nav-number">{chapter.number}</span>
+        <span>{chapter.title}</span>
       </button>
     </div>
   );

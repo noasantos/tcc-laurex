@@ -17,6 +17,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { State } from "./types";
 import { dirname } from "node:path";
 import { exportLatex } from "./documents";
+import { synchronizeChapterNumbers } from "./chapter-numbering";
 import { synchronizeChapterStatus } from "./chapter-status";
 import { synchronizeSources } from "./chapter-source";
 export const defaultDataDirectory = () =>
@@ -114,6 +115,11 @@ export class Store {
         for (const c of s.chapters) c.revision++;
       });
     }
+    const numbering = this.get();
+    if (numbering.chapters.some(c => c.number === undefined)) {
+      this.backup();
+      this.commit(numbering.revision, "separate_chapter_numbers", "system", () => {});
+    }
     this.materialize(this.get());
   }
   get(): State {
@@ -141,6 +147,7 @@ export class Store {
       const op = randomUUID();
       const before = structuredClone(s);
       mutate(s, op);
+      synchronizeChapterNumbers(s, before);
       synchronizeSources(s, before);
       synchronizeChapterStatus(s, before);
       s.revision++;

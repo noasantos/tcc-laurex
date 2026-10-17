@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { State } from "../../server/types";
 import type { Mutate } from "./Review";
+import { maximumChapterNumber } from "../../server/chapter-numbering";
 import { ChapterPlacement } from "./ChapterPlacement";
 import "./chapter-create.css";
 
@@ -18,10 +19,15 @@ export function ChapterCreate({
 }) {
   const [title, setTitle] = useState("");
   const [plan, setPlan] = useState("");
-  const [position, setPosition] = useState(String(state.chapters.length));
+  const [number, setNumber] = useState(
+    String(Math.max(0, ...state.chapters.map((c, i) => c.number ?? i + 1)) + 1),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const index = Math.min(Number(position), state.chapters.length);
+  const validNumber =
+    Number.isInteger(Number(number)) &&
+    Number(number) >= 1 &&
+    Number(number) <= maximumChapterNumber;
   return (
     <section className="page-scroll chapter-create-page">
       <div className="chapter-create-content">
@@ -32,7 +38,7 @@ export function ChapterCreate({
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              if (saving || !title.trim()) return;
+              if (saving || !title.trim() || !validNumber) return;
               setSaving(true);
               setError("");
               try {
@@ -40,7 +46,7 @@ export function ChapterCreate({
                   title: title.trim(),
                   plan,
                   parentId: null,
-                  position: index,
+                  number: Number(number),
                 });
                 onCreated(result.result.id);
               } catch (error) {
@@ -63,8 +69,8 @@ export function ChapterCreate({
               onChange={(e) => setTitle(e.target.value)}
             />
             <p className="chapter-create-intro">
-              Defina o lugar deste capítulo no trabalho. O texto pode ser
-              desenvolvido depois, com o ChatGPT.
+              Escolha o número na prévia. Ele é separado do título. O
+              texto pode ser desenvolvido depois, com o ChatGPT.
             </p>
 
             <label className="chapter-create-label">
@@ -90,7 +96,7 @@ export function ChapterCreate({
               <button
                 type="submit"
                 className="primary"
-                disabled={saving || !title.trim()}
+                disabled={saving || !title.trim() || !validNumber}
               >
                 {saving ? "Criando…" : "Criar capítulo"}
                 <ArrowRight size={14} />
@@ -103,8 +109,8 @@ export function ChapterCreate({
           <ChapterPlacement
             chapters={state.chapters}
             title={title}
-            position={index}
-            onPositionChange={(value) => setPosition(String(value))}
+            number={number}
+            onNumberChange={setNumber}
             disabled={saving}
           />
         </div>

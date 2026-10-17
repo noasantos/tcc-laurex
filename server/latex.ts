@@ -65,7 +65,7 @@ export async function compile(store: Store) {
   const content = state.chapters
     .map(
       (c) =>
-        `\\section{${c.title.replace(/[{}\\%]/g, "")}}\n${exportLatex(c.content, assets)}`,
+        `\\setcounter{section}{${(c.number ?? 1)-1}}\n\\section{${c.title.replace(/[{}\\%]/g, "")}}\n${exportLatex(c.content, assets)}`,
     )
     .join("\n");
   // Imported arbitrary TeX is preserved but never executed. Only our strict exporter may compile.

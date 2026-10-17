@@ -87,6 +87,12 @@ try {
   assert.equal(bibliography.result.count, 1);
 
   assert.equal(read.title, chapter.title);
+  const sixth = (await call("create_chapter", {expectedRevision: revision(), title: "Capítulo criado antes do quinto", number: 6})).result;
+  const fifth = (await call("create_chapter", {expectedRevision: revision(), title: "Discussão", number: 5})).result;
+  const numberedOutline = await call("get_project_outline");
+  assert.equal(numberedOutline.find((c: any) => c.id === sixth.id).number, 6);
+  assert.equal(numberedOutline.find((c: any) => c.id === fifth.id).number, 5);
+  assert.ok(numberedOutline.findIndex((c: any) => c.id === fifth.id) < numberedOutline.findIndex((c: any) => c.id === sixth.id));
   await call("create_note", {
     expectedRevision: revision(),
     content: "Nota escrita pelo protocolo MCP",

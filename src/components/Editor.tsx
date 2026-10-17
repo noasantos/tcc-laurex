@@ -824,7 +824,7 @@ export function DocumentEditor({
         </button>
       </BubbleMenu>
       <div className="document-meta">
-        <span>Documento / {chapter.title}</span>
+        <span>Documento / {chapter.number}. {chapter.title}</span>
         <div className="document-meta-actions">
           <div
             className="document-view-switch"
@@ -1012,7 +1012,7 @@ export function DocumentEditor({
           {!(
             chapter.content.content?.[0]?.type === "heading" &&
             plain(chapter.content.content[0]).trim() === chapter.title.trim()
-          ) && <h1 className="chapter-title">{chapter.title}</h1>}
+          ) && <h1 className="chapter-title"><span className="chapter-heading-number">{chapter.number}. </span>{chapter.title}</h1>}
           {!!chapter.latexWarnings?.length && (
             <p className="latex-projection-notice">
               Este capítulo contém comandos preservados no fonte.{" "}

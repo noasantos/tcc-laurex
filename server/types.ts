@@ -6,6 +6,8 @@ export type Doc = {
   content?: Doc[];
 };
 export type Chapter = {
+  /** Document ordinal, independent of title; gaps are allowed. */
+  number?: number;
   id: string;
   title: string;
   status: string;

@@ -15,10 +15,10 @@ export function academicPackage(state: State) {
   files["references.bib"] = strToU8(bibliography);
   const chapterFiles = state.chapters
     .map((c, i) => {
-      const name = `chapter-${String(i + 1).padStart(2, "0")}.tex`;
+      const name = `chapter-${String(c.number ?? i + 1).padStart(2, "0")}.tex`;
       const generated = exportLatex(c.content, files, `figures/${encodeURIComponent(c.id)}/`);
       files[name] = strToU8(c.latex ?? generated);
-      return `% ${c.title.replaceAll("\n", " ")}\n\\input{${name}}`;
+      return `% Capítulo ${c.number ?? i + 1}: ${c.title.replaceAll("\n", " ")}\n\\input{${name}}`;
     })
     .join("\n");
   files["chapters.tex"] = strToU8(chapterFiles);

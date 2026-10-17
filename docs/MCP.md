@@ -66,3 +66,9 @@ Na interface, **Concluir** e **Reabrir** ficam no cabeçalho do comentário. **A
 `create_comment` e `reply_to_comment` aceitam `author: "Laura" | "ChatGPT"`. Na interface, o padrão é Laura; pelo MCP, o padrão é ChatGPT. Use Laura quando ela ditar ou pedir explicitamente o registro de uma orientação própria. Quando ela pedir uma avaliação, os comentários da avaliação devem ter autor ChatGPT. A origem da operação (`origin: mcp`) permanece registrada mesmo com autor Laura; a interface identifica esse caso como “Laura · via ChatGPT”. Respostas seguem a mesma regra. A autoria não concede aprovação nem conclui o comentário.
 
 A página Comentários reúne todos os estados em abas com contagem, pesquisa, capítulo, autor, períodos recentes e ordenação. Não oferece um botão de novo comentário: Laura seleciona um trecho no documento e usa a ação contextual Comentar, ou pede o registro ao ChatGPT.
+
+### Numeração independente do título
+
+Use `create_chapter` com `title: "Conclusão"` e `number: 6`. O capítulo 5 não precisa existir. Ao criá-lo depois com `number: 5`, ele entra antes do 6. Se o número já estiver ocupado, apenas a sequência contígua é deslocada até a primeira lacuna. `number` e o antigo `position` (índice de inserção) não podem ser enviados juntos. `reorder_chapters` redistribui os números existentes entre os IDs na ordem solicitada, preservando lacunas e títulos. Todas as mudanças mantêm os controles de revisão.
+
+Na criação, o número é editável na linha destacada da prévia; as setas alteram esse número e arrastar escolhe seu lugar. A prévia mostra também os capítulos afetados antes de salvar. Projetos antigos recebem numeração em uma migração com backup prévio. Prefixos do antigo formato `1. Introdução` são separados somente quando correspondem à posição legada; os fontes LaTeX originais permanecem intactos. O campo `number` fica nos dados do projeto; fontes importados com numeração LaTeX própria continuam preservados literalmente.

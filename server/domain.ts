@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { diffWords } from "diff";
 import { Store } from "./store";
 import { emptyDoc, plain, type State, type Doc } from "./types";
+import { placeChapter, chapterNumber } from "./chapter-numbering";
 import { resolveAnchor, anchorText } from "./anchors";
 import { commentReference, findCommentReference } from "./comment-reference";
 import { validateDoc } from "./documents";
@@ -65,12 +66,14 @@ export const schemas = {
     content: doc.optional(),
     latex: z.string().max(5_000_000).optional(),
     position: z.number().int().nonnegative().optional(),
+    number: z.number().int().min(1).max(9999).optional(),
     plan: text.optional(),
   }),
   update_chapter: z.object({
     expectedRevision: rev,
     chapterId: id,
     chapterRevision: rev,
+    number: z.number().int().min(1).max(9999).optional(),
     title: id.optional(),
     status: status.optional(),
     acknowledgeOpenComments: z.literal(true).optional(),
@@ -259,7 +262,8 @@ export class Domain {
         case "get_project_status":
           return {
             revision: current.revision,
-            chapters: current.chapters.map(({ id, title, status }) => ({
+            chapters: current.chapters.map(({ id, title, status, number }) => ({
+              number,
               id,
               title,
               status,
@@ -292,7 +296,7 @@ export class Domain {
             ...c,
             reference: commentReference(c.id),
             project: { id: current.id, name: current.name, revision: current.revision },
-            chapter: { id: chapter.id, title: chapter.title, revision: chapter.revision },
+            chapter: { id: chapter.id, number: chapter.number, title: chapter.title, revision: chapter.revision },
             currentExcerpt: resolution.ranges.length ? resolution.ranges.map(range => {
               const block = blocks.get(range.blockId);
               return block ? anchorText(block).slice(range.from, range.to) : "";
@@ -371,7 +375,9 @@ export class Domain {
             if (a.latex !== undefined && a.content !== undefined) throw new Error("Envie latex ou content, nunca ambos.");
             if (a.latex !== undefined) setChapterLatex(result, a.latex);
             if (a.position !== undefined && a.position > s.chapters.length) throw new Error("Posição de capítulo inválida");
-            s.chapters.splice(a.position ?? s.chapters.length, 0, result);
+            if (a.number !== undefined && a.position !== undefined) throw new Error("Envie number ou position, nunca ambos.");
+            const number = a.number ?? (a.position !== undefined && a.position < s.chapters.length ? chapterNumber(s.chapters[a.position],s.chapters) : Math.max(0,...s.chapters.map(c=>c.number??0))+1);
+            s.chapters = placeChapter(s.chapters,result,number);
             break;
           }
           case "update_chapter": {
@@ -386,7 +392,7 @@ export class Domain {
               );
             if (a.status === "Planejado" && (c.started || c.status !== "Planejado"))
               throw new Error("Este capítulo já foi iniciado e não pode voltar a Planejado.");
-            if (a.acknowledgeOpenComments && (a.status !== "Concluído" || a.content !== undefined || a.latex !== undefined || a.title !== undefined))
+            if (a.acknowledgeOpenComments && (a.status !== "Concluído" || a.content !== undefined || a.latex !== undefined || a.title !== undefined || a.number !== undefined))
               throw new Error("A confirmação deve alterar somente o status do capítulo.");
             if (a.status === "Concluído" && c.status !== "Concluído") {
               const count = s.comments.filter(x => x.chapterId === c.id && x.status === "open").length;
@@ -397,6 +403,7 @@ export class Domain {
               if (a[k] !== undefined) (c as any)[k] = a[k];
             if (a.latex !== undefined && a.content !== undefined) throw new Error("Envie latex ou content, nunca ambos.");
             if (a.latex !== undefined) setChapterLatex(c, a.latex);
+            if (a.number !== undefined) s.chapters = placeChapter(s.chapters,c,a.number);
             c.revision++;
             result = c;
             break;
@@ -412,7 +419,8 @@ export class Domain {
               a.ids.some((i: string) => !s.chapters.some((c) => c.id === i))
             )
               throw new Error("Envie cada capítulo exatamente uma vez");
-            s.chapters = a.ids.map((i: string) => need(s.chapters, i));
+            const numbers = s.chapters.map(c=>c.number!).sort((a,b)=>a-b);
+            s.chapters = a.ids.map((i: string,index:number) => {const c=need(s.chapters,i);c.number=numbers[index];return c;});
             result = a.ids;
             break;
           }

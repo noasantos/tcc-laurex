@@ -816,7 +816,7 @@ export function Overview({
           onClick={() => onNavigate(c.id)}
         >
           <span className="chapter-number">
-            {String(i + 1).padStart(2, "0")}
+            {String(c.number ?? i + 1).padStart(2, "0")}
           </span>
           <div>
             <h3>{c.title}</h3>

@@ -31,3 +31,4 @@
 .chapter-placement-arrows button:disabled {opacity:.25;}
 .chapter-order-preview .is-dragging {box-shadow:0 6px 20px #0002;}
 @media(prefers-reduced-motion:reduce) {.chapter-order-preview li {transition:none !important;}}
+.chapter-order-preview .chapter-number-input{appearance:textfield;width:38px;min-width:38px;padding:4px 0;border:0;border-bottom:1px solid var(--muted);border-radius:0;background:transparent;box-shadow:none;font:13px ui-monospace,monospace;text-align:center;color:var(--text)}.chapter-number-input::-webkit-inner-spin-button,.chapter-number-input::-webkit-outer-spin-button{appearance:none;margin:0}.chapter-number-input:focus{outline:2px solid var(--muted);outline-offset:3px}.chapter-number-input[aria-invalid=true]{border-bottom-color:var(--danger)}

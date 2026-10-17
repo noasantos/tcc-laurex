@@ -180,7 +180,7 @@ app.post("/api/latex-alignment", async (req) => {
 app.get("/api/export/latex", async (_req, reply) => {
   const s = store.get();
   const tex = s.chapters
-    .map((c) => `% ${c.title}\n${c.latex ?? exportLatex(c.content)}`)
+    .map((c) => `% Capítulo ${c.number}: ${c.title}\n${c.latex ?? exportLatex(c.content)}`)
     .join("\n");
   return reply
     .header("Content-Disposition", 'attachment; filename="chapitres.tex"')
